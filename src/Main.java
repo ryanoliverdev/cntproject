@@ -10,4 +10,5 @@ public class Main {
         String response = client.sendMessage("hello jonathan");
 
         System.out.println(response);
+        System.out.println(args[0]);
     }}
