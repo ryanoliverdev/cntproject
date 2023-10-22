@@ -79,5 +79,5 @@ public class Main {
         // Need to implement Server and Client classes
 
         new Peer(peerIDs[0], commonInfo, peerInfo, "src/project_config_file_small/1001/thefile");
-
+        new Peer(peerIDs[5], commonInfo, peerInfo, "src/project_config_file_small/1006/thefile");
     }}

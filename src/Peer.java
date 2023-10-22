@@ -1,3 +1,5 @@
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 
 public class Peer {
@@ -10,7 +12,19 @@ public class Peer {
     String hostName;
     int portNumber;
     boolean hasFile;
+    int kNeighbors;
 
+    boolean isChoked = false;
+    boolean isInterested = false;
+    Client client;
+    // PeerID's of preferredNeighbors
+    private int[] preferredNeighbors;
+    private int[] interestedNeighbors;
+
+    private ArrayList<Integer> getPreferredNeighbors(int k, int[] interested) {
+        ArrayList<Integer> prefNeighbors = new ArrayList<>(kNeighbors);
+        return prefNeighbors;
+    }
     public Peer(int id, LinkedHashMap<String, String> commonInfo, LinkedHashMap<Integer, String[]> peerInfo, String File ) {
 
         // Reading in all Common.cfg Info
@@ -21,13 +35,15 @@ public class Peer {
         fileName = commonInfo.get("FileName");
         fileSize = Integer.parseInt(commonInfo.get("FileSize"));
         pieceSize = Integer.parseInt(commonInfo.get("PieceSize"));
-
+        kNeighbors = Integer.parseInt(commonInfo.get("NumberOfPreferredNeighbors"));
         // Reading in all PeerInfo.cfg Info
 
         hostName = peerInfo.get(id)[0];
         portNumber = Integer.parseInt(peerInfo.get(id)[1]);
         hasFile = Boolean.parseBoolean(peerInfo.get(id)[2]);
 
-
+        // Initializing client
+        client = new Client();
+        client.run();
     }
 }
