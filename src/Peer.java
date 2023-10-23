@@ -18,11 +18,13 @@ public class Peer {
     boolean isInterested = false;
     Client client;
     // PeerID's of preferredNeighbors
-    private int[] preferredNeighbors;
-    private int[] interestedNeighbors;
+    private ArrayList<Integer> preferredNeighbors;
+    private ArrayList<Integer> interestedNeighbors;
 
-    private ArrayList<Integer> getPreferredNeighbors(int k, int[] interested) {
+
+    private ArrayList<Integer> getPreferredNeighbors(int k, ArrayList<Integer> interested) {
         ArrayList<Integer> prefNeighbors = new ArrayList<>(kNeighbors);
+
         return prefNeighbors;
     }
     public Peer(int id, LinkedHashMap<String, String> commonInfo, LinkedHashMap<Integer, String[]> peerInfo, String File ) {
@@ -43,7 +45,8 @@ public class Peer {
         hasFile = Boolean.parseBoolean(peerInfo.get(id)[2]);
 
         // Initializing client
-        client = new Client();
+        client = new Client(this);
         client.run();
     }
+
 }
