@@ -92,6 +92,7 @@ public class Client {
         }
     }
 
+    // This might go in the peer class
     void handshakeMessage()
     {
         // This might have to be sent as a byte array. Fine for now

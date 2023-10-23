@@ -18,7 +18,30 @@ public class Peer {
     // PeerID's of preferredNeighbors
     private ArrayList<int[]> preferredNeighbors;
     private ArrayList<Integer> interestedNeighbors;
+    private void chokePeer(int srcPeerID){
 
+    }
+    private void unChokePeer(int srcPeerID){
+
+    }
+    private void setInterestPeer(int srcPeerID){
+
+    }
+    private void unSetInterestPeer(int srcPeerID){
+
+    }
+    private void setHasFilePeer(int srcPeerID){
+
+    }
+    private void sendBitfield(int srcPeerID){
+
+    }
+    private void requestPieces(int srcPeerID){
+
+    }
+    private void sendPieces(int srcPeerID){
+
+    }
     private int getDownloadRate(int peerID){
         // needs implementation
         return 0;
@@ -40,6 +63,31 @@ public class Peer {
         ArrayList<int[]> result = new ArrayList<>(lastKElements);
         return result;
     }
+    public void requestPreferredNeighbors(int k, ArrayList<Integer> neighbors){
+        if (!preferredNeighbors.isEmpty()){
+            preferredNeighbors = getPreferredNeighbors(k, neighbors);
+        }
+        else
+        {
+            // get k random neighbors
+        }
+    }
+    public void interpretPeerMessage(int srcPeerID, byte[] message){
+        // need to make messages byte arrays
+        // placeholders
+        int option = 0;
+        switch(option) {
+            case 0 -> chokePeer(srcPeerID);
+            case 1 -> unChokePeer(srcPeerID);
+            case 2 -> setInterestPeer(srcPeerID);
+            case 3 -> unSetInterestPeer(srcPeerID);
+            case 4 -> setHasFilePeer(srcPeerID);
+            case 5 -> sendBitfield(srcPeerID);
+            case 6 -> requestPieces(srcPeerID);
+            case 7 -> sendPieces(srcPeerID);
+        }
+    }
+
     public Peer(int id, LinkedHashMap<String, String> commonInfo, LinkedHashMap<Integer, String[]> peerInfo, String File ) {
 
         // Reading in all Common.cfg Info
