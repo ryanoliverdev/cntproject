@@ -15,9 +15,11 @@ public class Peer {
     boolean isChoked = false;
     boolean isInterested = false;
     Client client;
-    // PeerID's of preferredNeighbors
+    // PeerID's of preferredNeighbors along with download rates (maybe can get rid of these after sorting)
     private ArrayList<int[]> preferredNeighbors;
     private ArrayList<Integer> interestedNeighbors;
+
+    // Private Functions
     private void chokePeer(int srcPeerID){
 
     }
@@ -63,6 +65,8 @@ public class Peer {
         ArrayList<int[]> result = new ArrayList<>(lastKElements);
         return result;
     }
+
+    // Public Functions
     public void requestPreferredNeighbors(int k, ArrayList<Integer> neighbors){
         if (!preferredNeighbors.isEmpty()){
             preferredNeighbors = getPreferredNeighbors(k, neighbors);
