@@ -20,6 +20,34 @@ public class Peer {
     private ArrayList<Integer> interestedNeighbors;
 
     // Private Functions
+
+    // Message Bodies
+    private void sendChokeMessage(){
+
+    }
+    private void sendUnChokeMessage(){
+
+    }
+    private void sendInterestMessage(){
+
+    }
+    private void sendUnInterestMessage(){
+
+    }
+    private void sendHasFileMessage(){
+
+    }
+    private void sendBitFieldMessage(){
+
+    }
+    private void sendRequestPiecesMessage(){
+
+    }
+    private void sendPiecesMessage(){
+
+    }
+
+    // Message Types
     private void chokePeer(int srcPeerID){
 
     }
@@ -48,13 +76,13 @@ public class Peer {
         // needs implementation
         return 0;
     }
-    private ArrayList<int[]> getPreferredNeighbors(int k, ArrayList<Integer> neighbors) {
-        int n = neighbors.size();
+    private ArrayList<int[]> getPreferredNeighbors(int k, ArrayList<Integer> interested) {
+        int n = interested.size();
         ArrayList<int[]> prefNeighbors = new ArrayList<>(kNeighbors);
         for (int i = 0; i < n; i++)
         {
             // pass tuple with download rate and id to be sorted later
-            int currNeighbor = neighbors.get(i);
+            int currNeighbor = interested.get(i);
             int rate = getDownloadRate(currNeighbor);
             int [] tuple = {currNeighbor, rate};
             prefNeighbors.add(tuple);
