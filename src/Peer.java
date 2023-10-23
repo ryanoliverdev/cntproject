@@ -1,6 +1,4 @@
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
+import java.util.*;
 
 public class Peer {
     int unchokingInterval;
@@ -18,14 +16,29 @@ public class Peer {
     boolean isInterested = false;
     Client client;
     // PeerID's of preferredNeighbors
-    private ArrayList<Integer> preferredNeighbors;
+    private ArrayList<int[]> preferredNeighbors;
     private ArrayList<Integer> interestedNeighbors;
 
-
-    private ArrayList<Integer> getPreferredNeighbors(int k, ArrayList<Integer> interested) {
-        ArrayList<Integer> prefNeighbors = new ArrayList<>(kNeighbors);
-
-        return prefNeighbors;
+    private int getDownloadRate(int peerID){
+        // needs implementation
+        return 0;
+    }
+    private ArrayList<int[]> getPreferredNeighbors(int k, ArrayList<Integer> neighbors) {
+        int n = neighbors.size();
+        ArrayList<int[]> prefNeighbors = new ArrayList<>(kNeighbors);
+        for (int i = 0; i < n; i++)
+        {
+            // pass tuple with download rate and id to be sorted later
+            int currNeighbor = neighbors.get(i);
+            int rate = getDownloadRate(currNeighbor);
+            int [] tuple = {currNeighbor, rate};
+            prefNeighbors.add(tuple);
+        }
+        Collections.sort(prefNeighbors, Comparator.comparing(a -> a[1]));
+        // Sublist starting from (size - k) to the end of the list
+        List<int[]> lastKElements = prefNeighbors.subList(n - k, n);
+        ArrayList<int[]> result = new ArrayList<>(lastKElements);
+        return result;
     }
     public Peer(int id, LinkedHashMap<String, String> commonInfo, LinkedHashMap<Integer, String[]> peerInfo, String File ) {
 
