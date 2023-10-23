@@ -22,6 +22,10 @@ public class Peer {
     // Private Functions
 
     // Message Bodies
+    private void sendHandshakeMessage(){
+        String message = "P2PFILESHARINGPROJ0000000000" + peerID;
+        client.sendMessage(message);
+    }
     private void sendChokeMessage(){
 
     }
@@ -88,7 +92,7 @@ public class Peer {
             prefNeighbors.add(tuple);
         }
         Collections.sort(prefNeighbors, Comparator.comparing(a -> a[1]));
-        // Sublist starting from (size - k) to the end of the list
+        // get the top k
         List<int[]> lastKElements = prefNeighbors.subList(n - k, n);
         ArrayList<int[]> result = new ArrayList<>(lastKElements);
         return result;
