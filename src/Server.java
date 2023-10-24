@@ -4,10 +4,12 @@ import java.nio.*;
 import java.nio.channels.*;
 import java.util.*;
 
-public class Server {
+public class Server { //server part of peer: sends data on port ****
 
-    private static final int sPort = 8000;   //The server will be listening on this port number
-
+    private static int sPort = 8000;   //The server will be listening on this port number
+    private int peerID;
+    //comment out main below after debug, this is only to test handshake
+    //really the peer will have a server and client, and the server doesnt run seperately
     public static void main(String[] args) throws Exception {
         System.out.println("The server is running.");
         ServerSocket listener = new ServerSocket(sPort);
@@ -23,6 +25,13 @@ public class Server {
         }
 
     }
+    
+    Server(Peer peer)
+    {
+        sPort = peer.portNumber;
+        peerID = peer.peerID;
+        System.out.println("Peer " + peerID + " able to send on port " + sPort);
+    }
 
     /**
      * A handler thread class.  Handlers are spawned from the listening
@@ -36,6 +45,8 @@ public class Server {
         private ObjectOutputStream out;    //stream write to the socket
         private int no;		//The index number of the client
 
+        private boolean completedHandshake = false;
+        
         public Handler(Socket connection, int no) {
             this.connection = connection;
             this.no = no;
