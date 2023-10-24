@@ -7,7 +7,6 @@ import java.util.*;
 public class Server {
 
     private static final int sPort = 8000;   //The server will be listening on this port number
-
     public static void main(String[] args) throws Exception {
         System.out.println("The server is running.");
         ServerSocket listener = new ServerSocket(sPort);
@@ -29,13 +28,14 @@ public class Server {
      * loop and are responsible for dealing with a single client's requests.
      */
     private static class Handler extends Thread {
-        private String message;    //message received from the client
-        private String MESSAGE;    //uppercase message send to the client
+        private String clientMessage;    //message received from the client
+        private String serverMessage;    //message sent to client
         private Socket connection;
         private ObjectInputStream in;	//stream read from the socket
         private ObjectOutputStream out;    //stream write to the socket
         private int no;		//The index number of the client
 
+        private boolean completedHandshake = false;
         public Handler(Socket connection, int no) {
             this.connection = connection;
             this.no = no;
@@ -51,13 +51,45 @@ public class Server {
                     while(true)
                     {
                         //receive the message sent from the client
-                        message = (String)in.readObject();
+                        clientMessage = (String)in.readObject();
                         //show the message to the user
-                        System.out.println("Receive message: " + message + " from client " + no);
-                        //Capitalize all letters in the message
-                        MESSAGE = message.toUpperCase();
-                        //send MESSAGE back to the client
-                        sendMessage(MESSAGE);
+                        System.out.println("Received message: " + clientMessage + " from client " + no);
+                        //send message back
+                        serverMessage = "hi";
+                        if (clientMessage.contains("P2PFILESHARINGPROJ")) {
+                            // In reality, this would be another peer sending another handshake
+                            sendMessage(clientMessage);
+                            System.out.println("Completing operations in server...");
+                            completedHandshake = true;
+                        }
+                        if (!completedHandshake)
+                        {
+                            sendMessage("Need to complete handshake");
+                        }
+                        if (completedHandshake) {
+                            // for testing
+                            int messageType = 0;
+                            try {
+
+                                messageType = Integer.parseInt(clientMessage);
+                            } catch (NumberFormatException nfe) {
+                                // do something
+                                System.out.println(clientMessage + " is not a number");
+                            }
+                            // the prints are placeholders for what will likely be function calls
+                            switch (messageType) {
+                                case 0 -> sendMessage("Choke");
+                                case 1 -> sendMessage("Unchoke");
+                                case 2 -> sendMessage("Interested");
+                                case 3 -> sendMessage("Not Interested");
+                                case 4 -> sendMessage("Have");
+                                case 5 -> sendMessage("Bitfield");
+                                case 6 -> sendMessage("Request");
+                                case 7 -> sendMessage("Piece");
+                                default -> sendMessage(clientMessage);
+
+                            }
+                        }
                     }
                 }
                 catch(ClassNotFoundException classnot){

@@ -8,10 +8,16 @@ public class Client {
     Socket requestSocket;           //socket connect to the server
     ObjectOutputStream out;         //stream write to the socket
     ObjectInputStream in;          //stream read from the socket
-    String message;                //message send to the server
-    String MESSAGE;                //capitalized message read from the server
-
-    public void Client() {}
+    String message_sent;                //message send to the server
+    String message_received;                //message read from the server
+    private int portNumber;
+    private int peerID;
+    private boolean completedHandshake = false;
+    Client(Peer peer) {
+        portNumber = peer.portNumber;
+        peerID = peer.peerID;
+        System.out.println("New peer " + peerID + " listening on port " + portNumber);
+    }
 
     void run()
     {
@@ -23,20 +29,30 @@ public class Client {
             out = new ObjectOutputStream(requestSocket.getOutputStream());
             out.flush();
             in = new ObjectInputStream(requestSocket.getInputStream());
-
-            //get Input from standard input
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(System.in));
             while(true)
             {
-                System.out.print("Hello, please input a sentence: ");
+                // This will be done automatically later
+                if (!completedHandshake)
+                {
+                    System.out.print("Hello, please input P2PFILESHARINGPROJ to initiate handshake:");
+                }
+                else
+                {
+                    System.out.print("Enter message type (num):");
+                }
+
                 //read a sentence from the standard input
-                message = bufferedReader.readLine();
-                //Send the sentence to the server
-                sendMessage(message);
-                //Receive the upperCase sentence from the server
-                MESSAGE = (String)in.readObject();
-                //show the message to the user
-                System.out.println("Receive message: " + MESSAGE);
+                message_sent = bufferedReader.readLine();
+                // message sent on port
+                sendMessage(message_sent);
+                message_received = (String)in.readObject();
+                if (message_received.contains("P2PFILESHARINGPROJ")) {
+                    completedHandshake=true;
+                }
+
+                // check message
+                System.out.println(peerID + " received: " + message_received);
             }
         }
         catch (ConnectException e) {
@@ -74,12 +90,6 @@ public class Client {
         catch(IOException ioException){
             ioException.printStackTrace();
         }
-    }
-    //main method
-    public static void main(String args[])
-    {
-        Client client = new Client();
-        client.run();
     }
 
 }

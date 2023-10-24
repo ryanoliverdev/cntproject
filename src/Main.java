@@ -77,7 +77,8 @@ public class Main {
 
         // Testing setting up a peer
         // Need to implement Server and Client classes
+        //Peer Peer2 = new Peer(peerIDs[5], commonInfo, peerInfo, "src/project_config_file_small/1006/thefile");
+        Peer Peer1 = new Peer(peerIDs[0], commonInfo, peerInfo, "src/project_config_file_small/1001/thefile");
 
-        new Peer(peerIDs[0], commonInfo, peerInfo, "src/project_config_file_small/1001/thefile");
 
     }}
