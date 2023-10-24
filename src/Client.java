@@ -4,7 +4,7 @@ import java.nio.*;
 import java.nio.channels.*;
 import java.util.*;
 
-public class Client {
+public class Client { //client part of the peer: reads data from port ****
     Socket requestSocket;           //socket connect to the server
     ObjectOutputStream out;         //stream write to the socket
     ObjectInputStream in;          //stream read from the socket
@@ -91,5 +91,15 @@ public class Client {
             ioException.printStackTrace();
         }
     }
-
+    void closeConnections()
+    {
+        try{
+            in.close();
+            out.close();
+            requestSocket.close();
+        }
+        catch(IOException ioException){
+            ioException.printStackTrace();
+        }
+    }
 }

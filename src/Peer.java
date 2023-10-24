@@ -1,4 +1,5 @@
 import java.util.*;
+import java.nio.ByteBuffer;
 
 public class Peer {
     int unchokingInterval;
@@ -22,21 +23,95 @@ public class Peer {
     // Private Functions
 
     // Message Bodies
-    private void sendHandshakeMessage(){
-        String message = "P2PFILESHARINGPROJ0000000000" + peerID;
-        client.sendMessage(message);
+    private void /*byte[] */ sendHandshakeMessage(){
+        //String message = "P2PFILESHARINGPROJ0000000000" + peerID;
+        byte[] handshakeMessage = new byte[32]; //32 byte handshake message: 18, 10, 4
+        byte[] peerIDbytes = ByteBuffer.allocate(4).putInt(peerID).array();
+        byte[] header = "P2PFILESHARINGPROJ".getBytes();
+
+        //put header into handshake message array
+        System.arraycopy(header, 0, handshakeMessage, 0, header.length);
+        for(int i = 18; i < 28; i++)//start in array at index 18(after header)
+        {
+            handshakeMessage[i] = 0; //put in 0 bits for 10 bytes
+        }
+        System.arraycopy(peerIDbytes, 0, handshakeMessage, 28, 4);
+
+        //below line for debugging, remove ltr
+        client.sendMessage("P2PFILESHARINGPROJ0000000000\"" + peerID);
     }
-    private void sendChokeMessage(){
+    private void sendChokeMessage()
+    {
+        int messageType = 0; // "choke" message type
+
+        // Create a byte array to store the message
+        byte[] chokeMessage = new byte[5]; // 4 bytes for length, 1 byte for message type
+
+        // Calculate the message length (1 byte for the type, no payload)
+        int messageLength = 1;
+        ByteBuffer buffer = ByteBuffer.allocate(4);
+        buffer.putInt(messageLength);
+        System.arraycopy(buffer.array(), 0, chokeMessage, 0, 4);
+
+        // Set the message type
+        chokeMessage[4] = (byte) messageType;
+
+        // Simulate sending the "choke" message to the peer
 
     }
-    private void sendUnChokeMessage(){
+    private void sendUnChokeMessage()
+    {
+        int messageType = 1; // "unchoke" message type
 
+        // Create a byte array to store the message
+        byte[] unchokeMessage = new byte[5]; // 4 bytes for length, 1 byte for message type
+
+        // Calculate the message length (1 byte for the type, no payload)
+        int messageLength = 1;
+        ByteBuffer buffer = ByteBuffer.allocate(4);
+        buffer.putInt(messageLength);
+        System.arraycopy(buffer.array(), 0, unchokeMessage, 0, 4);
+
+        // Set the message type
+        unchokeMessage[4] = (byte) messageType;
+
+        // Send message to neighbor peers
     }
-    private void sendInterestMessage(){
+    private void sendInterestMessage()
+    {
+        int messageType = 2; // "interest" message type
 
+        // Create a byte array to store the message
+        byte[] interestMessage = new byte[5]; // 4 bytes for length, 1 byte for message type
+
+        // Calculate the message length (1 byte for the type, no payload)
+        int messageLength = 1;
+        ByteBuffer buffer = ByteBuffer.allocate(4);
+        buffer.putInt(messageLength);
+        System.arraycopy(buffer.array(), 0, interestMessage, 0, 4);
+
+        // Set the message type
+        interestMessage[4] = (byte) messageType;
+
+        // Send peer message
     }
-    private void sendUnInterestMessage(){
+    private void sendUnInterestMessage()
+    {
+        int messageType = 2; // "uninterest" message type
 
+        // Create a byte array to store the message
+        byte[] uninterestMessage = new byte[5]; // 4 bytes for length, 1 byte for message type
+
+        // Calculate the message length (1 byte for the type, no payload)
+        int messageLength = 1;
+        ByteBuffer buffer = ByteBuffer.allocate(4);
+        buffer.putInt(messageLength);
+        System.arraycopy(buffer.array(), 0, uninterestMessage, 0, 4);
+
+        // Set the message type
+        uninterestMessage[4] = (byte) messageType;
+
+        // Send peer message
     }
     private void sendHasFileMessage(){
 
