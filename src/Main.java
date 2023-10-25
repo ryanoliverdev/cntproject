@@ -5,7 +5,8 @@ import java.util.LinkedHashMap;
 import java.util.Scanner;
 import java.util.Set;
 
-public class Main {
+public class Main 
+{
 
     public static LinkedHashMap<String, String> readCommonInfo(String path)
     {
@@ -58,7 +59,8 @@ public class Main {
 
         return peerInfo;
     }
-    public static void main(String[] args) {
+    public static void main(String[] args) 
+    {
 
         String commonPath = "src/project_config_file_small/Common.cfg";//"src/project_config_file_small/Common.cfg";
         String peerInfoPath = "src/project_config_file_small/PeerInfo.cfg";//"src/project_config_file_small/PeerInfo.cfg";
