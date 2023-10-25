@@ -1,7 +1,8 @@
 import java.net.*;
 import java.io.*;
 
-public class Client { //client part of the peer: reads data from port ****
+public class Client 
+{ //client part of the peer: reads data from port ****
     Socket requestSocket;           //socket connect to the server
     ObjectOutputStream out;         //stream write to the socket
     ObjectInputStream in;          //stream read from the socket
@@ -10,7 +11,9 @@ public class Client { //client part of the peer: reads data from port ****
     private int portNumber;
     private int peerID;
     private boolean completedHandshake = false;
-    Client(Peer peer) {
+    
+    Client(Peer peer) 
+    {
         portNumber = peer.portNumber;
         peerID = peer.peerID;
         System.out.println("New peer " + peerID + " listening on port " + portNumber);

@@ -7,7 +7,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.nio.ByteBuffer;
 
-public class Peer {
+public class Peer 
+{
     int unchokingInterval;
     int optimisticUnchokingInterval;
     String fileName;
@@ -172,8 +173,7 @@ public class Peer {
         // Send peer message
         client.sendMessage(bitfieldMessage);
     }
-    private void sendRequestMessage(byte[] indexField)
-    {
+    private void sendRequestMessage(byte[] indexField){
         int messageType = 4; // "hasFile" message type
 
         // Create a byte array to store the message
@@ -240,15 +240,26 @@ public class Peer {
     }
     private void sendBitfield(int srcPeerID)
     {
-
+        /*‘bitfield’ messages is only sent as the first message right after handshaking is done when
+        a connection is established. ‘bitfield’ messages have a bitfield as its payload. Each bit in
+        the bitfield payload represents whether the peer has the corresponding piece or not. The
+        first byte of the bitfield corresponds to piece indices 0 – 7 from high bit to low bit,
+        respectively. The next one corresponds to piece indices 8 – 15, etc. Spare bits at the end
+        are set to zero. Peers that don’t have anything yet may skip a ‘bitfield’ message */
     }
     private void requestPieces(int srcPeerID)
     {
-
+        /*request’ messages have a payload which consists of a 4-byte piece index field. Note
+        that ‘request’ message payload defined here is different from that of BitTorrent. We don’t
+        divide a piece into smaller subpieces.
+        */
     }
     private void sendPieces(int srcPeerID)
     {
-
+        /*
+         * piece’ messages have a payload which consists of a 4-byte piece index field and the
+            content of the piece.   
+         */
     }
     private int getDownloadRate(int peerID)
     {
@@ -377,7 +388,8 @@ public class Peer {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         String formattedDateTime = currentTime.format(formatter);
 
-        switch(typeOfMessage) {
+        switch(typeOfMessage) 
+        {
             case 0:
                 // Peer 1 connects to Peer 2
                 logFileData = formattedDateTime + ": Peer " + peerID + " makes a connection to Peer " + peerID2 + ".";
