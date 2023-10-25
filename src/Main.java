@@ -79,8 +79,12 @@ public class Main {
         // Need to implement Server and Client classes within peer class
         Peer Peer1 = new Peer(peerIDs[0], commonInfo, peerInfo, "src/project_config_file_small/1001/thefile");
         Peer Peer2 = new Peer(peerIDs[1], commonInfo, peerInfo, "src/project_config_file_small/1002/");
-
-
-
+        Peer Peer3 = new Peer(peerIDs[0], commonInfo, peerInfo, "src/project_config_file_small/1003/");
+        Peer Peer4 = new Peer(peerIDs[1], commonInfo, peerInfo, "src/project_config_file_small/1004/");
+        Peer Peer5 = new Peer(peerIDs[0], commonInfo, peerInfo, "src/project_config_file_small/1005/");
+        Peer Peer6 = new Peer(peerIDs[1], commonInfo, peerInfo, "src/project_config_file_small/1006/thefile");
+        Peer Peer7 = new Peer(peerIDs[0], commonInfo, peerInfo, "src/project_config_file_small/1007/");
+        Peer Peer8 = new Peer(peerIDs[1], commonInfo, peerInfo, "src/project_config_file_small/1008/");
+        Peer Peer9 = new Peer(peerIDs[0], commonInfo, peerInfo, "src/project_config_file_small/1009/");
     }
 }

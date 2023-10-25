@@ -4,23 +4,29 @@ import java.nio.*;
 import java.nio.channels.*;
 import java.util.*;
 
-public class Server { //server part of peer: sends data on port ****
+public class Server 
+{ //server part of peer: sends data on port ****
 
     private static int sPort = 8000;   //The server will be listening on this port number
     private int peerID;
     //comment out main below after debug, this is only to test handshake
     //really the peer will have a server and client, and the server doesnt run seperately
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) throws Exception 
+    {
         System.out.println("The server is running.");
         ServerSocket listener = new ServerSocket(sPort);
         int clientNum = 1;
-        try {
-            while(true) {
+        try 
+        {
+            while(true) 
+            {
                 new Handler(listener.accept(),clientNum).start();
                 System.out.println("Client "  + clientNum + " is connected!");
                 clientNum++;
             }
-        } finally {
+        } 
+        finally 
+        {
             listener.close();
         }
 
@@ -37,7 +43,8 @@ public class Server { //server part of peer: sends data on port ****
      * A handler thread class.  Handlers are spawned from the listening
      * loop and are responsible for dealing with a single client's requests.
      */
-    private static class Handler extends Thread {
+    private static class Handler extends Thread 
+    {
         private String clientMessage;    //message received from the client
         private String serverMessage;    //message sent to client
         private Socket connection;
@@ -47,18 +54,22 @@ public class Server { //server part of peer: sends data on port ****
 
         private boolean completedHandshake = false;
 
-        public Handler(Socket connection, int no) {
+        public Handler(Socket connection, int no) 
+        {
             this.connection = connection;
             this.no = no;
         }
 
-        public void run() {
-            try{
+        public void run() 
+        {
+            try
+            {
                 //initialize Input and Output streams
                 out = new ObjectOutputStream(connection.getOutputStream());
                 out.flush();
                 in = new ObjectInputStream(connection.getInputStream());
-                try{
+                try
+                {
                     while(true)
                     {
                         //receive the message sent from the client
@@ -67,7 +78,8 @@ public class Server { //server part of peer: sends data on port ****
                         System.out.println("Received message: " + clientMessage + " from client " + no);
                         //send message back
                         serverMessage = "hi";
-                        if (clientMessage.contains("P2PFILESHARINGPROJ")) {
+                        if (clientMessage.contains("P2PFILESHARINGPROJ")) 
+                        {
                             // In reality, this would be another peer sending another handshake
                             sendMessage(clientMessage);
                             System.out.println("Completing operations in server...");
@@ -77,10 +89,12 @@ public class Server { //server part of peer: sends data on port ****
                         {
                             sendMessage("Need to complete handshake");
                         }
-                        if (completedHandshake) {
+                        if (completedHandshake) 
+                        {
                             // for testing
                             int messageType = 0;
-                            try {
+                            try 
+                            {
 
                                 messageType = Integer.parseInt(clientMessage);
                             } catch (NumberFormatException nfe) {
@@ -110,14 +124,17 @@ public class Server { //server part of peer: sends data on port ****
             catch(IOException ioException){
                 System.out.println("Disconnect with Client " + no);
             }
-            finally{
+            finally 
+            {
                 //Close connections
-                try{
+                try
+                {
                     in.close();
                     out.close();
                     connection.close();
                 }
-                catch(IOException ioException){
+                catch(IOException ioException)
+                {
                     System.out.println("Disconnect with Client " + no);
                 }
             }
@@ -126,12 +143,14 @@ public class Server { //server part of peer: sends data on port ****
         //send a message to the output stream
         public void sendMessage(String msg)
         {
-            try{
+            try
+            {
                 out.writeObject(msg);
                 out.flush();
                 System.out.println("Send message: " + msg + " to Client " + no);
             }
-            catch(IOException ioException){
+            catch(IOException ioException)
+            {
                 ioException.printStackTrace();
             }
         }

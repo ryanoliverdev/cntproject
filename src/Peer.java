@@ -7,7 +7,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.nio.ByteBuffer;
 
-public class Peer {
+public class Peer 
+{
     int unchokingInterval;
     int optimisticUnchokingInterval;
     String fileName;
@@ -29,7 +30,8 @@ public class Peer {
     // Private Functions
 
     // Message Bodies
-    private void /*byte[] */ sendHandshakeMessage(){
+    private void /*byte[] */ sendHandshakeMessage()
+    {
         //String message = "P2PFILESHARINGPROJ0000000000" + peerID;
         byte[] handshakeMessage = new byte[32]; //32 byte handshake message: 18, 10, 4
         byte[] peerIDbytes = ByteBuffer.allocate(4).putInt(peerID).array();
@@ -125,7 +127,8 @@ public class Peer {
         // Send peer message
         client.sendMessage(uninterestMessage);
     }
-    private void sendHasFileMessage(byte[] indexField){
+    private void sendHasFileMessage(byte[] indexField)
+    {
         int messageType = 4; // "hasFile" message type
 
         // Create a byte array to store the message
@@ -168,7 +171,7 @@ public class Peer {
         client.sendMessage(bitfieldMessage);
     }
     private void sendRequestMessage(byte[] indexField){
-        int messageType = 4; // "hasFile" message type
+        int messageType = 6; // "hasFile" message type
 
         // Create a byte array to store the message
         byte[] requestMessage = new byte[9]; // 4 bytes for length, 1 byte for message type, 4 bytes for payload
@@ -189,7 +192,7 @@ public class Peer {
         client.sendMessage(requestMessage);
     }
     private void sendPiecesMessage(byte[] indexField, byte[] pieceContent){
-        int messageType = 4; // "hasFile" message type
+        int messageType = 7; // "hasFile" message type
 
         // Create a byte array to store the message
         byte[] sendPiecesMessage = new byte[9]; // 4 bytes for length, 1 byte for message type, 4 bytes for payload
@@ -226,16 +229,20 @@ public class Peer {
     private void setHasFilePeer(int srcPeerID){
         hasFilePeer.put(srcPeerID, true);
     }
-    private void sendBitfield(int srcPeerID){
+    private void sendBitfield(int srcPeerID)
+    {
 
     }
-    private void requestPieces(int srcPeerID){
+    private void requestPieces(int srcPeerID)
+    {
 
     }
-    private void sendPieces(int srcPeerID){
+    private void sendPieces(int srcPeerID)
+    {
 
     }
-    private int getDownloadRate(int peerID){
+    private int getDownloadRate(int peerID)
+    {
         // needs implementation
         return 0;
     }
