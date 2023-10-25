@@ -1,15 +1,12 @@
 import java.net.*;
 import java.io.*;
-import java.nio.*;
-import java.nio.channels.*;
-import java.util.*;
 
 public class Client { //client part of the peer: reads data from port ****
     Socket requestSocket;           //socket connect to the server
     ObjectOutputStream out;         //stream write to the socket
     ObjectInputStream in;          //stream read from the socket
-    String message_sent;                //message send to the server
-    String message_received;                //message read from the server
+    byte[] message_sent;                //message send to the server
+    byte[] message_received;                //message read from the server
     private int portNumber;
     private int peerID;
     private boolean completedHandshake = false;
@@ -43,16 +40,16 @@ public class Client { //client part of the peer: reads data from port ****
                 }
 
                 //read a sentence from the standard input
-                message_sent = bufferedReader.readLine();
+                message_sent = bufferedReader.readLine().getBytes();
                 // message sent on port
                 sendMessage(message_sent);
-                message_received = (String)in.readObject();
-                if (message_received.contains("P2PFILESHARINGPROJ")) {
+                message_received = in.readObject().toString().getBytes();
+                if (message_received.toString().contains("P2PFILESHARINGPROJ")) {
                     completedHandshake=true;
                 }
 
                 // check message
-                System.out.println(peerID + " received: " + message_received);
+                System.out.println(peerID + " received: " + message_received.toString());
             }
         }
         catch (ConnectException e) {
@@ -80,7 +77,7 @@ public class Client { //client part of the peer: reads data from port ****
         }
     }
     //send a message to the output stream
-    void sendMessage(String msg)
+    void sendMessage(byte[] msg)
     {
         try{
             //stream write the message
