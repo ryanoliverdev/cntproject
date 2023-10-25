@@ -60,8 +60,8 @@ public class Main {
     }
     public static void main(String[] args) {
 
-        String commonPath = "project_config_file_small/Common.cfg";//"src/project_config_file_small/Common.cfg";
-        String peerInfoPath = "project_config_file_small/PeerInfo.cfg";//"src/project_config_file_small/PeerInfo.cfg";
+        String commonPath = "src/project_config_file_small/Common.cfg";//"src/project_config_file_small/Common.cfg";
+        String peerInfoPath = "src/project_config_file_small/PeerInfo.cfg";//"src/project_config_file_small/PeerInfo.cfg";
 
         // We must use LinkedHashMaps since the directions specify that "You need to
         // start the peer processes in the order specified in the file PeerInfo.cfg on the machine specified in the file."

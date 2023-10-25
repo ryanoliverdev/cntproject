@@ -263,9 +263,8 @@ public class Peer {
     }
     public void interpretPeerMessage(int srcPeerID, byte[] message){
         // need to make messages byte arrays
-        // placeholders
-        int option = 0;
-        switch(option) {
+        byte type = message[4];
+        switch(type) {
             case 0 -> chokePeer(srcPeerID);
             case 1 -> unChokePeer(srcPeerID);
             case 2 -> setInterestPeer(srcPeerID);
