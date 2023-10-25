@@ -18,9 +18,9 @@ public class Peer {
     int portNumber;
     boolean hasFile;
     int kNeighbors;
-
-    boolean isChoked = false;
-    boolean isInterested = false;
+    HashMap<Integer, Boolean> isChokedPeer;
+    HashMap<Integer, Boolean> isInterestedPeer;
+    HashMap<Integer, Boolean> hasFilePeer;
     Client client;
     // PeerID's of preferredNeighbors along with download rates (maybe can get rid of these after sorting)
     private ArrayList<int[]> preferredNeighbors;
@@ -44,7 +44,9 @@ public class Peer {
         System.arraycopy(peerIDbytes, 0, handshakeMessage, 28, 4);
 
         //below line for debugging, remove ltr
-        client.sendMessage("P2PFILESHARINGPROJ0000000000\"" + peerID);
+        byte[] p2p = ("P2PFILESHARINGPROJ0000000000" + peerID).getBytes();
+
+        client.sendMessage(p2p);
     }
     private void sendChokeMessage()
     {
@@ -63,6 +65,7 @@ public class Peer {
         chokeMessage[4] = (byte) messageType;
 
         // Simulate sending the "choke" message to the peer
+        client.sendMessage(chokeMessage);
 
     }
     private void sendUnChokeMessage()
@@ -82,6 +85,7 @@ public class Peer {
         unchokeMessage[4] = (byte) messageType;
 
         // Send message to neighbor peers
+        client.sendMessage(unchokeMessage);
     }
     private void sendInterestMessage()
     {
@@ -100,10 +104,11 @@ public class Peer {
         interestMessage[4] = (byte) messageType;
 
         // Send peer message
+        client.sendMessage(interestMessage);
     }
     private void sendUnInterestMessage()
     {
-        int messageType = 2; // "uninterest" message type
+        int messageType = 3; // "uninterest" message type
 
         // Create a byte array to store the message
         byte[] uninterestMessage = new byte[5]; // 4 bytes for length, 1 byte for message type
@@ -118,36 +123,108 @@ public class Peer {
         uninterestMessage[4] = (byte) messageType;
 
         // Send peer message
+        client.sendMessage(uninterestMessage);
     }
-    private void sendHasFileMessage(){
+    private void sendHasFileMessage(byte[] indexField){
+        int messageType = 4; // "hasFile" message type
 
+        // Create a byte array to store the message
+        byte[] hasFileMessage = new byte[9]; // 4 bytes for length, 1 byte for message type, 4 bytes for payload
+
+        // Calculate the message length (1 byte for the type)
+        int messageLength = 1;
+        ByteBuffer buffer = ByteBuffer.allocate(4);
+        buffer.putInt(messageLength);
+        System.arraycopy(buffer.array(), 0, hasFileMessage, 0, 4);
+
+        // Set the message type
+        hasFileMessage[4] = (byte) messageType;
+
+        // Calculate the payload length (4 bytes for the indexField)
+        System.arraycopy(indexField, 0, hasFileMessage, 5, 4);
+
+        // Send peer message
+        client.sendMessage(hasFileMessage);
     }
-    private void sendBitFieldMessage(){
+    private void sendBitfieldMessage(byte[] bitfield){
+        int messageType = 5; // "BitField" message type
 
+        // Create a byte array to store the message
+        byte[] bitfieldMessage = new byte[9]; // 4 bytes for length, 1 byte for message type, 4 bytes for payload
+
+        // Calculate the message length (1 byte for the type)
+        int messageLength = 1;
+        ByteBuffer buffer = ByteBuffer.allocate(4);
+        buffer.putInt(messageLength);
+        System.arraycopy(buffer.array(), 0, bitfieldMessage, 0, 4);
+
+        // Set the message type
+        bitfieldMessage[4] = (byte) messageType;
+
+        // Calculate the payload length (4 bytes for the indexField)
+        System.arraycopy(bitfield, 0, bitfieldMessage, 5, bitfield.length);
+
+        // Send peer message
+        client.sendMessage(bitfieldMessage);
     }
-    private void sendRequestPiecesMessage(){
+    private void sendRequestMessage(byte[] indexField){
+        int messageType = 4; // "hasFile" message type
 
+        // Create a byte array to store the message
+        byte[] requestMessage = new byte[9]; // 4 bytes for length, 1 byte for message type, 4 bytes for payload
 
+        // Calculate the message length (1 byte for the type)
+        int messageLength = 1;
+        ByteBuffer buffer = ByteBuffer.allocate(4);
+        buffer.putInt(messageLength);
+        System.arraycopy(buffer.array(), 0, requestMessage, 0, 4);
+
+        // Set the message type
+        requestMessage[4] = (byte) messageType;
+
+        // Calculate the payload length (4 bytes for the indexField)
+        System.arraycopy(indexField, 0, requestMessage, 5, 4);
+
+        // Send peer message
+        client.sendMessage(requestMessage);
     }
-    private void sendPiecesMessage(){
+    private void sendPiecesMessage(byte[] indexField, byte[] pieceContent){
+        int messageType = 4; // "hasFile" message type
 
+        // Create a byte array to store the message
+        byte[] sendPiecesMessage = new byte[9]; // 4 bytes for length, 1 byte for message type, 4 bytes for payload
+
+        // Calculate the message length (1 byte for the type)
+        int messageLength = 1;
+        ByteBuffer buffer = ByteBuffer.allocate(4);
+        buffer.putInt(messageLength);
+        System.arraycopy(buffer.array(), 0, sendPiecesMessage, 0, 4);
+
+        // Set the message type
+        sendPiecesMessage[4] = (byte) messageType;
+
+        // Calculate the payload length (4 bytes for the indexField)
+        System.arraycopy(indexField, 0, sendPiecesMessage, 5, 4);
+        System.arraycopy(pieceContent, 0, sendPiecesMessage, 9, pieceContent.length);
+        // Send peer message
+        client.sendMessage(sendPiecesMessage);
     }
 
     // Message Types
     private void chokePeer(int srcPeerID){
-
+        isChokedPeer.put(srcPeerID, true);
     }
     private void unChokePeer(int srcPeerID){
-
+        isChokedPeer.put(srcPeerID, false);
     }
     private void setInterestPeer(int srcPeerID){
-
+        isInterestedPeer.put(srcPeerID, true);
     }
     private void unSetInterestPeer(int srcPeerID){
-
+        isInterestedPeer.put(srcPeerID, false);
     }
     private void setHasFilePeer(int srcPeerID){
-
+        hasFilePeer.put(srcPeerID, true);
     }
     private void sendBitfield(int srcPeerID){
 
@@ -192,9 +269,8 @@ public class Peer {
     }
     public void interpretPeerMessage(int srcPeerID, byte[] message){
         // need to make messages byte arrays
-        // placeholders
-        int option = 0;
-        switch(option) {
+        byte type = message[4];
+        switch(type) {
             case 0 -> chokePeer(srcPeerID);
             case 1 -> unChokePeer(srcPeerID);
             case 2 -> setInterestPeer(srcPeerID);
