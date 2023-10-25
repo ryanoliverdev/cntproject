@@ -298,9 +298,9 @@ public class Peer
             // get k random neighbors
             for (int i = 0; i < k; i++)
             {
-                int randNum = (int) (Math.random() * interestedNeighbors.size());
+                int randNum = (int) (Math.random() * neighbors.size());
                 // random peer from interested neighbors
-                int currPeer = interestedNeighbors.get(randNum);
+                int currPeer = neighbors.get(randNum);
                 if (preferredNeighbors.contains(currPeer))
                 {
                     // repeat iteration if duplicate
@@ -479,7 +479,7 @@ public class Peer
         hasFile = Boolean.parseBoolean(peerInfo.get(id)[2]);
 
         // Initializing client
-        client = new Client(this);
+        client = new Client(6001, peerID);
         client.run();
     }
 

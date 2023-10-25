@@ -12,10 +12,10 @@ public class Client
     private int peerID;
     private boolean completedHandshake = false;
     
-    Client(Peer peer) 
+    Client(int portNum, int id)
     {
-        portNumber = peer.portNumber;
-        peerID = peer.peerID;
+        portNumber = portNum;
+        peerID = id;
         System.out.println("New peer " + peerID + " listening on port " + portNumber);
     }
 
