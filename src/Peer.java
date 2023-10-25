@@ -1,3 +1,9 @@
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.nio.ByteBuffer;
 
@@ -274,6 +280,89 @@ public class Peer {
             case 6 -> requestPieces(srcPeerID);
             case 7 -> sendPieces(srcPeerID);
         }
+    }
+
+    // Still needs more implementation
+    public void writeLogMessage(int typeOfMessage, int peerID, int peerID2, int pieceIndex, int totalPieces)
+    {
+        String filePath = "/log_peer_" + peerID + ".log";
+
+        // Creating a FileWriter and BufferedWriter to create and write to the log file
+        FileWriter fw = null;
+        BufferedWriter bw = null;
+        File logFile = new File(filePath);
+
+        try
+        {
+            fw = new FileWriter(logFile.getName(), true);
+            bw = new BufferedWriter(fw);
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException(e);
+        }
+
+        String logFileData = "";
+        LocalDateTime currentTime = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        String formattedDateTime = currentTime.format(formatter);
+
+        switch(typeOfMessage) {
+            case 0:
+                logFileData = formattedDateTime + ": Peer " + peerID + " makes a connection to Peer " + peerID2 + ".";
+                break;
+            case 1:
+                logFileData = formattedDateTime + ": Peer " + peerID + " is connected from Peer " + peerID2 + ".";
+                break;
+            case 2:
+                logFileData = formattedDateTime + ": Peer " + peerID + " has the preferred neighbors ";
+                for (int i = 0; i < preferredNeighbors.size(); i++) {
+                    logFileData += preferredNeighbors.get(i)[0] + ", ";
+                }
+                logFileData += ".";
+                break;
+            case 3:
+                logFileData = formattedDateTime + ": Peer " + peerID + " has the optimistically unchoked neighbor " + peerID2 + ".";
+                break;
+            case 4:
+                logFileData = formattedDateTime + ": Peer " + peerID + " is unchoked by " + peerID2 + ".";
+                break;
+            case 5:
+                logFileData = formattedDateTime + ": Peer " + peerID + " is choked by " + peerID2 + ".";
+                break;
+            case 6:
+                logFileData = formattedDateTime + ": Peer " + peerID + " received the ‘have’ message from " + peerID2 + " for the piece" + pieceIndex + ".";
+                break;
+            case 7:
+                logFileData = formattedDateTime + ": Peer " + peerID + "  received the ‘interested’ message from " + peerID2 + ".";
+                break;
+            case 8:
+                logFileData = formattedDateTime + ": Peer " + peerID + " received the ‘not interested’ message from " + peerID2 + ".";
+                break;
+            case 9:
+                logFileData = formattedDateTime + ": Peer " + peerID + " has downloaded the piece " + pieceIndex + " from " + peerID2 + "." + " Now the number of pieces it has is " + totalPieces + ".";
+                totalPieces++;
+                break;
+            case 10:
+                logFileData = formattedDateTime + ": Peer " + peerID + " has downloaded the complete file.";
+                break;
+
+            default:
+                System.out.println("Error: Type of message not recognized.");
+                break;
+        }
+
+        try
+        {
+            bw.write(logFileData);
+            bw.close();
+            fw.close();
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException(e);
+        }
+
     }
 
     public Peer(int id, LinkedHashMap<String, String> commonInfo, LinkedHashMap<Integer, String[]> peerInfo, String File ) {
