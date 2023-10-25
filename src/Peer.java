@@ -12,8 +12,9 @@ public class Peer {
     int portNumber;
     boolean hasFile;
     int kNeighbors;
-    HashMap<Integer, Boolean> isChoked;
-    HashMap<Integer, Boolean> isInterested;
+    HashMap<Integer, Boolean> isChokedPeer;
+    HashMap<Integer, Boolean> isInterestedPeer;
+    HashMap<Integer, Boolean> hasFilePeer;
     Client client;
     // PeerID's of preferredNeighbors along with download rates (maybe can get rid of these after sorting)
     private ArrayList<int[]> preferredNeighbors;
@@ -205,19 +206,19 @@ public class Peer {
 
     // Message Types
     private void chokePeer(int srcPeerID){
-
+        isChokedPeer.put(srcPeerID, true);
     }
     private void unChokePeer(int srcPeerID){
-
+        isChokedPeer.put(srcPeerID, false);
     }
     private void setInterestPeer(int srcPeerID){
-
+        isInterestedPeer.put(srcPeerID, true);
     }
     private void unSetInterestPeer(int srcPeerID){
-
+        isInterestedPeer.put(srcPeerID, false);
     }
     private void setHasFilePeer(int srcPeerID){
-
+        hasFilePeer.put(srcPeerID, true);
     }
     private void sendBitfield(int srcPeerID){
 
