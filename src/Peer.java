@@ -285,21 +285,70 @@ public class Peer {
         else
         {
             // get k random neighbors
+            for (int i = 0; i < k; i++)
+            {
+                int randNum = (int) (Math.random() * interestedNeighbors.size());
+                // random peer from interested neighbors
+                int currPeer = interestedNeighbors.get(randNum);
+                if (preferredNeighbors.contains(currPeer))
+                {
+                    // repeat iteration if duplicate
+                    i--;
+                }
+                else
+                {
+                    // set download rate to 0 at start
+                    int [] prefNeighbor = {currPeer, 0};
+                    preferredNeighbors.add(prefNeighbor);
+                }
+            }
         }
     }
     public void interpretPeerMessage(int srcPeerID, byte[] message)
     {
-        // need to make messages byte arrays
+        // message type
         byte type = message[4];
         switch(type) {
-            case 0 -> chokePeer(srcPeerID);
-            case 1 -> unChokePeer(srcPeerID);
-            case 2 -> setInterestPeer(srcPeerID);
-            case 3 -> unSetInterestPeer(srcPeerID);
-            case 4 -> setHasFilePeer(srcPeerID);
-            case 5 -> sendBitfield(srcPeerID);
-            case 6 -> requestPieces(srcPeerID);
-            case 7 -> sendPieces(srcPeerID);
+            // choke peer type
+            case 0 -> {
+                chokePeer(srcPeerID);
+                writeLogMessage(type, peerID, srcPeerID, 0, 0);
+            }
+            // unchoke message type
+            case 1 -> {
+                unChokePeer(srcPeerID);
+                writeLogMessage(type, peerID, srcPeerID, 0, 0);
+            }
+            // setInterest message type
+            case 2 -> {
+                setInterestPeer(srcPeerID);
+                writeLogMessage(type, peerID, srcPeerID, 0, 0);
+            }
+            // unsetInterest message type
+            case 3 -> {
+                unSetInterestPeer(srcPeerID);
+                writeLogMessage(type, peerID, srcPeerID, 0, 0);
+            }
+            // hasFile message type
+            case 4 -> {
+                setHasFilePeer(srcPeerID);
+                writeLogMessage(type, peerID, srcPeerID, 0, 0);
+            }
+            // bitfield message type
+            case 5 -> {
+                sendBitfield(srcPeerID);
+                writeLogMessage(type, peerID, srcPeerID, 0, 0);
+            }
+            // request message type
+            case 6 -> {
+                requestPieces(srcPeerID);
+                writeLogMessage(type, peerID, srcPeerID, 0, 0);
+            }
+            // pieces message type
+            case 7 -> {
+                sendPieces(srcPeerID);
+                writeLogMessage(type, peerID, srcPeerID, 0, 0);
+            }
         }
     }
 
