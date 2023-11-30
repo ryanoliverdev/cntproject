@@ -1,14 +1,14 @@
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
+import java.net.ServerSocket;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.nio.ByteBuffer;
 
-public class Peer 
+public class Peer
 {
+    String commonPath = "/Common.cfg";
+    String peerInfoPath = "/PeerInfo.cfg";
     int unchokingInterval;
     int optimisticUnchokingInterval;
     String fileName;
@@ -23,6 +23,8 @@ public class Peer
     HashMap<Integer, Boolean> isInterestedPeer;
     HashMap<Integer, Boolean> hasFilePeer;
     Client client;
+
+    Server server;
     // PeerID's of preferredNeighbors along with download rates (maybe can get rid of these after sorting)
     private ArrayList<int[]> preferredNeighbors;
     private ArrayList<Integer> interestedNeighbors;
@@ -459,11 +461,63 @@ public class Peer
         }
 
     }
+    public static LinkedHashMap<String, String> readCommonInfo(String path)
+    {
 
-    public Peer(int id, LinkedHashMap<String, String> commonInfo, LinkedHashMap<Integer, String[]> peerInfo, String File )
+        LinkedHashMap<String, String> commonInfo = new LinkedHashMap<String, String>();
+
+        try {
+            File commonFile = new File(path);
+            Scanner reader = new Scanner(commonFile);
+
+            while(reader.hasNextLine())
+            {
+                String data = reader.nextLine();
+                String[] dataArr = data.split(" ");
+
+                commonInfo.put(dataArr[0], dataArr[1]);
+            }
+        }
+        catch (FileNotFoundException e)
+        {
+            System.out.println("File not found");
+        }
+
+        return commonInfo;
+    }
+
+    public static LinkedHashMap<Integer, String[]> readPeerInfo(String path)
+    {
+        LinkedHashMap<Integer, String[]> peerInfo = new LinkedHashMap<Integer, String[]>();
+
+        try {
+            File peerFile = new File(path);
+            Scanner reader = new Scanner(peerFile);
+
+            while(reader.hasNextLine())
+            {
+                String data = reader.nextLine();
+                String[] dataArr = data.split(" ");
+
+                Integer peerID = Integer.parseInt(dataArr[0]);
+                String[] peerData = {dataArr[1], dataArr[2], dataArr[3]};
+
+                peerInfo.put(peerID, peerData);
+            }
+        }
+        catch (FileNotFoundException e)
+        {
+            System.out.println("File not found");
+        }
+
+        return peerInfo;
+    }
+    public Peer(int id)
     {
 
         // Reading in all Common.cfg Info
+        LinkedHashMap<String, String> commonInfo = readCommonInfo(commonPath);
+        LinkedHashMap<Integer, String[]> peerInfo = readPeerInfo(peerInfoPath);
 
         peerID = id;
         unchokingInterval = Integer.parseInt(commonInfo.get("UnchokingInterval"));
@@ -478,8 +532,14 @@ public class Peer
         portNumber = Integer.parseInt(peerInfo.get(id)[1]);
         hasFile = Boolean.parseBoolean(peerInfo.get(id)[2]);
 
+        try {
+            server = new Server();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         // Initializing client
-        client = new Client(6001, peerID);
+        client = new Client(peerID);
         client.run();
     }
 

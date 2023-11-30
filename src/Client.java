@@ -1,5 +1,6 @@
 import java.net.*;
 import java.io.*;
+import java.util.LinkedHashMap;
 
 public class Client 
 { //client part of the peer: reads data from port ****
@@ -12,9 +13,8 @@ public class Client
     private int peerID;
     private boolean completedHandshake = false;
     
-    Client(int portNum, int id)
+    Client(int id)
     {
-        portNumber = portNum;
         peerID = id;
         System.out.println("New peer " + peerID + " listening on port " + portNumber);
     }

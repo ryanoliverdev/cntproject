@@ -1,37 +1,8 @@
 import java.net.*;
 import java.io.*;
-import java.nio.*;
-import java.nio.channels.*;
-import java.util.*;
 
 public class Server 
-{ //server part of peer: sends data on port ****
-
-    private static int sPort = 8000;   //The server will be listening on this port number
-    private int peerID;
-    //comment out main below after debug, this is only to test handshake
-    //really the peer will have a server and client, and the server doesnt run seperately
-    public static void main(String[] args) throws Exception 
-    {
-        System.out.println("The server is running.");
-        ServerSocket listener = new ServerSocket(sPort);
-        int clientNum = 1;
-        try 
-        {
-            while(true) 
-            {
-                new Handler(listener.accept(),clientNum).start();
-                System.out.println("Client "  + clientNum + " is connected!");
-                clientNum++;
-            }
-        } 
-        finally 
-        {
-            listener.close();
-        }
-
-    }
-
+{
     Server(Peer peer)
     {
         sPort = peer.portNumber;
@@ -141,18 +112,15 @@ public class Server
         }
 
         //send a message to the output stream
-        public void sendMessage(String msg)
-        {
-            try
-            {
+        public void sendMessage(String msg) {
+            try {
                 out.writeObject(msg);
                 out.flush();
                 System.out.println("Send message: " + msg + " to Client " + no);
-            }
-            catch(IOException ioException)
-            {
+            } catch (IOException ioException) {
                 ioException.printStackTrace();
             }
         }
     }
+
 }
