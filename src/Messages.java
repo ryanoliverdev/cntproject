@@ -1,24 +1,9 @@
 import java.io.*;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 
-public class MessageSender {
-    public static void sendMessage(Client client, byte[] msg)
+public class Messages {
+    public static byte[] getHandshakeMessage(int peerID)
     {
-        DataOutputStream out = client.out;
-        DataInputStream in = client.in;
-        try{
-            //stream write the message
-            out.write(msg);
-            out.flush();
-        }
-        catch(IOException ioException){
-            ioException.printStackTrace();
-        }
-    }
-    public static void sendHandshakeMessage(Client client)
-    {
-        int peerID = client.peer.peerID;
         byte[] handshakeMessage = new byte[32]; //32 byte handshake message: 18, 10, 4
         byte[] peerIDbytes = Integer.toString(peerID).getBytes();
         byte[] header = "P2PFILESHARINGPROJ".getBytes();
@@ -30,12 +15,10 @@ public class MessageSender {
         {
             handshakeMessage[i] = 0; //put in 0 bits for 10 bytes
         }
-
         System.arraycopy(peerIDbytes, 0, handshakeMessage, 28, 4);
-        // System.out.println(Arrays.toString(handshakeMessage));
-        sendMessage(client, handshakeMessage);
+        return handshakeMessage;
     }
-    public static void sendChokeMessage(Client client)
+    public static byte[] getChokeMessage()
     {
         int messageType = 0; // "choke" message type
 
@@ -52,10 +35,10 @@ public class MessageSender {
         chokeMessage[4] = (byte) messageType;
 
         // Simulate sending the "choke" message to the peer
-        sendMessage(client, chokeMessage);
+        return chokeMessage;
 
     }
-    public static void sendUnChokeMessage(Client client)
+    public static byte[] getUnChokeMessage()
     {
         int messageType = 1; // "unchoke" message type
 
@@ -72,9 +55,9 @@ public class MessageSender {
         unchokeMessage[4] = (byte) messageType;
 
         // Send message to neighbor peers
-        sendMessage(client, unchokeMessage);
+        return unchokeMessage;
     }
-    public static void sendInterestMessage(Client client)
+    public static byte[] getInterestMessage()
     {
         int messageType = 2; // "interest" message type
 
@@ -91,9 +74,9 @@ public class MessageSender {
         interestMessage[4] = (byte) messageType;
 
         // Send peer message
-        sendMessage(client, interestMessage);
+        return interestMessage;
     }
-    public static void sendUnInterestMessage(Client client)
+    public static byte[] getUnInterestMessage()
     {
         int messageType = 3; // "uninterest" message type
 
@@ -110,9 +93,9 @@ public class MessageSender {
         uninterestMessage[4] = (byte) messageType;
 
         // Send peer message
-        sendMessage(client, uninterestMessage);
+        return uninterestMessage;
     }
-    public static void sendHasFileMessage(Client client, byte[] indexField)
+    public static byte[] getHasFileMessage(byte[] indexField)
     {
         int messageType = 4; // "hasFile" message type
 
@@ -132,9 +115,9 @@ public class MessageSender {
         System.arraycopy(indexField, 0, hasFileMessage, 5, 4);
 
         // Send peer message
-        sendMessage(client, hasFileMessage);
+        return hasFileMessage;
     }
-    public static void sendBitfieldMessage(Client client, byte[] bitfield)
+    public static byte[] getBitfieldMessage(byte[] bitfield)
     {
         int messageType = 5; // "BitField" message type
 
@@ -154,9 +137,9 @@ public class MessageSender {
         System.arraycopy(bitfield, 0, bitfieldMessage, 5, bitfield.length);
 
         // Send peer message
-        sendMessage(client, bitfieldMessage);
+        return bitfieldMessage;
     }
-    public static void sendRequestMessage(Client client, byte[] indexField){
+    public static byte[] getRequestMessage(byte[] indexField){
         int messageType = 4; // "hasFile" message type
 
         // Create a byte array to store the message
@@ -175,9 +158,9 @@ public class MessageSender {
         System.arraycopy(indexField, 0, requestMessage, 5, 4);
 
         // Send peer message
-        sendMessage(client, requestMessage);
+        return requestMessage;
     }
-    public static void sendPiecesMessage(Client client, byte[] indexField, byte[] pieceContent)
+    public static byte[] getPiecesMessage(byte[] indexField, byte[] pieceContent)
     {
         int messageType = 4; // "hasFile" message type
 
@@ -197,6 +180,6 @@ public class MessageSender {
         System.arraycopy(indexField, 0, sendPiecesMessage, 5, 4);
         System.arraycopy(pieceContent, 0, sendPiecesMessage, 9, pieceContent.length);
         // Send peer message
-        sendMessage(client, sendPiecesMessage);
+        return sendPiecesMessage;
     }
 }

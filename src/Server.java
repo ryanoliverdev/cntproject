@@ -4,6 +4,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 public class Server 
 {
+
     Server(Peer peer){
         int portNum = peer.portNumber;
         System.out.println("Server running on port " + portNum);
@@ -13,7 +14,7 @@ public class Server
             int clientNum = 1;
             try {
                 while(true) {
-                    new Handler(listener.accept(),clientNum).start();
+                    new Handler(listener.accept(), clientNum, peer.peerID).start();
                     System.out.println("Client " + clientNum + " is connected!");
                     clientNum++;
                 }
@@ -38,12 +39,14 @@ public class Server
         private DataOutputStream out;    //stream write to the socket
         private int no;		//The index number of the client
 
+        private int peerID;
         private boolean completedHandshake = false;
 
-        public Handler(Socket connection, int no) 
+        public Handler(Socket connection, int no, int p)
         {
             this.connection = connection;
             this.no = no;
+            this.peerID = p;
         }
 
         public void run() 
@@ -71,7 +74,25 @@ public class Server
                             peerIDStr += (char) buffer[28 + i];
                         }
                         System.out.println("Handshake recieved from peer " + peerIDStr);
-                        completedHandshake = true;
+                        byte[] handshakeMessage = Messages.getHandshakeMessage(peerID);
+                        sendMessage(handshakeMessage);
+                        // Checks if it receives a handshake back.
+                        in.read(buffer);
+                        String receivedPeerID = "";
+                        for (int i = 0; i < 4; i++)
+                        {
+                            receivedPeerID += (char) buffer[28 + i];
+                        }
+                        // We are supposed to check something about the Peer ID not sure what
+                        if (true)
+                        {
+                            System.out.println("Handshake Complete after " + receivedPeerID + " shook back.");
+                        }
+                        else
+                        {
+                            System.out.println("Handshake went terribly wrong");
+                        }
+
                     }
                     else
                     {
@@ -90,31 +111,39 @@ public class Server
                         // the prints are placeholders for what will likely be function calls
                         switch (messageType) {
                             case 0:
-                                sendMessage("Choke".getBytes());
+                                byte[] chokeMessage = Messages.getChokeMessage();
+                                sendMessage(chokeMessage);
                                 break;
                             case 1:
-                                sendMessage("Unchoke".getBytes());
+                                byte[] unChokeMessage = Messages.getUnChokeMessage();
+                                sendMessage(unChokeMessage);
                                 break;
                             case 2:
-                                sendMessage("Interested".getBytes());
+                                byte[] interestedMessage = Messages.getInterestMessage();
+                                sendMessage(interestedMessage);
                                 break;
                             case 3:
-                                sendMessage("Not Interested".getBytes());
+                                byte[] unInterestedMessage = Messages.getUnInterestMessage();
+                                sendMessage(unInterestedMessage);
                                 break;
                             case 4:
-                                sendMessage("Have".getBytes());
+                                byte[] hasFileMessage = Messages.getHasFileMessage("placeholder".getBytes());
+                                sendMessage(hasFileMessage);
                                 break;
                             case 5:
-                                sendMessage("Bitfield".getBytes());
+                                byte[] bitfieldMessage = Messages.getBitfieldMessage("placeholder".getBytes());
+                                sendMessage(bitfieldMessage);
                                 break;
                             case 6:
-                                sendMessage("Request".getBytes());
+                                byte[] requestMessage = Messages.getRequestMessage("placeholder".getBytes());
+                                sendMessage(requestMessage);
                                 break;
                             case 7:
-                                sendMessage("Piece".getBytes());
+                                byte[] piecesMessage = Messages.getPiecesMessage("placeholder".getBytes(), "placeholder".getBytes());
+                                sendMessage(piecesMessage);
                                 break;
                             default:
-                                sendMessage("Default".getBytes());
+                                sendMessage("placeholder".getBytes());
                         }
                     }
                 }
