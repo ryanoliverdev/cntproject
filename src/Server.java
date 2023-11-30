@@ -1,7 +1,9 @@
 import java.net.*;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
+
 public class Server 
 {
 
@@ -14,7 +16,7 @@ public class Server
             int clientNum = 1;
             try {
                 while(true) {
-                    new Handler(listener.accept(), clientNum, peer.peerID).start();
+                    new Handler(listener.accept(), clientNum, peer).start();
                     System.out.println("Client " + clientNum + " is connected!");
                     clientNum++;
                 }
@@ -32,21 +34,21 @@ public class Server
      */
     private static class Handler extends Thread
     {
-        private byte[] clientMessage;    //message received from the client
-        private byte[] serverMessage;    //message sent to client
+        private byte[] clientMessage = new byte[128];    //message received from the client
+        private byte[] serverMessage = new byte[128];    //message sent to client
         private Socket connection;
         private DataInputStream in;	//stream read from the socket
         private DataOutputStream out;    //stream write to the socket
         private int no;		//The index number of the client
 
-        private int peerID;
+        private Peer peer;
         private boolean completedHandshake = false;
 
-        public Handler(Socket connection, int no, int p)
+        public Handler(Socket connection, int no, Peer p)
         {
             this.connection = connection;
             this.no = no;
-            this.peerID = p;
+            this.peer = p;
         }
 
         public void run() 
@@ -66,7 +68,7 @@ public class Server
                     byte[] expectedHeader = "P2PFILESHARINGPROJ".getBytes(StandardCharsets.UTF_8);
 
 
-                    if (Arrays.equals(headerBytes, expectedHeader))
+                    if (!completedHandshake && Arrays.equals(headerBytes, expectedHeader))
                     {
                         String peerIDStr = "";
                         for (int i = 0; i < 4; i++)
@@ -74,33 +76,28 @@ public class Server
                             peerIDStr += (char) buffer[28 + i];
                         }
                         System.out.println("Handshake recieved from peer " + peerIDStr);
-                        byte[] handshakeMessage = Messages.getHandshakeMessage(peerID);
+                        byte[] handshakeMessage = Messages.getHandshakeMessage(peer.peerID);
                         sendMessage(handshakeMessage);
-                        // Checks if it receives a handshake back.
-                        in.read(buffer);
-                        String receivedPeerID = "";
-                        for (int i = 0; i < 4; i++)
-                        {
-                            receivedPeerID += (char) buffer[28 + i];
-                        }
-                        // We are supposed to check something about the Peer ID not sure what
-                        if (true)
-                        {
-                            System.out.println("Handshake Complete after " + receivedPeerID + " shook back.");
-                        }
-                        else
-                        {
-                            System.out.println("Handshake went terribly wrong");
-                        }
+                        completedHandshake = true;
 
-                    }
-                    else
-                    {
-                        System.out.println(Arrays.toString(buffer) + " != " + Arrays.toString(expectedHeader));
-                        continue;
                     }
                     if (completedHandshake)
                     {
+                        in.read(clientMessage);
+                        if (peer.hasFile)
+                        {
+                            // bitfield
+                            int numOfPieces = peer.fileSize / peer.pieceSize;
+                            byte[] bitfield = ByteBuffer.allocate(4).putInt(numOfPieces).array();
+                            if (bitfield.length < 4) {
+                                byte[] paddedBitfield = new byte[4];
+                                System.arraycopy(bitfield, 0, paddedBitfield, 0, bitfield.length);
+                                bitfield = paddedBitfield;
+                            }
+                            byte[] bitfieldMessage = Messages.getBitfieldMessage(bitfield);
+                            sendMessage(bitfieldMessage);
+                        }
+
                         int messageType = 0;
                         try
                         {
