@@ -1,91 +1,69 @@
 import java.net.*;
 import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
 
 public class Client 
 { //client part of the peer: reads data from port ****
     Socket requestSocket;           //socket connect to the server
-    ObjectOutputStream out;         //stream write to the socket
-    ObjectInputStream in;          //stream read from the socket
+    static DataOutputStream out;         //stream write to the socket
+    static DataInputStream in;          //stream read from the socket
     byte[] message_sent;                //message send to the server
     byte[] message_received;                //message read from the server
-    private int portNumber;
-    private int peerID;
+    private LinkedHashMap<Integer, String[]> peerInfo;
     private boolean completedHandshake = false;
-    
-    Client(int portNum, int id)
+    public Peer peer;
+    Client(Peer p, LinkedHashMap<Integer, String[]> pInfo)
     {
-        portNumber = portNum;
-        peerID = id;
-        System.out.println("New peer " + peerID + " listening on port " + portNumber);
+        peer = p;
+        peerInfo = pInfo;
+        System.out.println("New peer " + peer.peerID + " listening on port " + peer.portNumber);
     }
 
     void run()
     {
-        try{
-            //create a socket to connect to the server
-            requestSocket = new Socket("localhost", 8000);
-            System.out.println("Connected to localhost in port 8000");
-            //initialize inputStream and outputStream
-            out = new ObjectOutputStream(requestSocket.getOutputStream());
-            out.flush();
-            in = new ObjectInputStream(requestSocket.getInputStream());
-            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(System.in));
-            while(true)
-            {
-                // This will be done automatically later
-                if (!completedHandshake)
-                {
-                    System.out.print("Hello, please input P2PFILESHARINGPROJ to initiate handshake:");
+        try {
+            // send handshake to all clients
+            for (int id = 1001; id < peer.peerID; id++) {
+                int peerPort = Integer.parseInt(peerInfo.get(id)[1]);
+                String hostName = peerInfo.get(id)[0];
+                requestSocket = new Socket(hostName, peerPort);
+                System.out.println("Connected to " + hostName + " in port " + peerPort);
+                out = new DataOutputStream(requestSocket.getOutputStream());
+                out.flush();
+                in = new DataInputStream(requestSocket.getInputStream());
+                // handshake
+                byte[] handshakeMessage = Messages.getHandshakeMessage(peer.peerID);
+                sendMessage(handshakeMessage);
+
+                // Send back handshake to server
+                byte[] buffer = new byte[32];
+                int bytesRead = in.read(buffer);
+                byte[] headerBytes = Arrays.copyOfRange(buffer, 0, 18);
+                byte[] expectedHeader = "P2PFILESHARINGPROJ".getBytes(StandardCharsets.UTF_8);
+                // If received handshake back
+                if (Arrays.equals(headerBytes, expectedHeader)) {
+                    String peerIDStr = "";
+                    for (int i = 0; i < 4; i++) {
+                        peerIDStr += (char) buffer[28 + i];
+                    }
+                    System.out.println("Handshake recieved from peer " + peerIDStr);
                 }
                 else
                 {
-                    System.out.print("Enter message type (num):");
+                    System.out.println("Something went very wrong");
                 }
-
-                //read a sentence from the standard input
-                message_sent = bufferedReader.readLine().getBytes();
-                // message sent on port
-                sendMessage(message_sent);
-                message_received = in.readObject().toString().getBytes();
-                if (message_received.toString().contains("P2PFILESHARINGPROJ")) {
-                    completedHandshake=true;
-                }
-
-                // check message
-                System.out.println(peerID + " received: " + message_received.toString());
             }
         }
         catch (ConnectException e) {
             System.err.println("Connection refused. You need to initiate a server first.");
         }
-        catch ( ClassNotFoundException e ) {
-            System.err.println("Class not found");
-        }
+//        catch ( ClassNotFoundException e ) {
+//            System.err.println("Class not found");
+//        }
         catch(UnknownHostException unknownHost){
             System.err.println("You are trying to connect to an unknown host!");
-        }
-        catch(IOException ioException){
-            ioException.printStackTrace();
-        }
-        finally{
-            //Close connections
-            try{
-                in.close();
-                out.close();
-                requestSocket.close();
-            }
-            catch(IOException ioException){
-                ioException.printStackTrace();
-            }
-        }
-    }
-    //send a message to the output stream
-    void sendMessage(byte[] msg)
-    {
-        try{
-            //stream write the message
-            out.writeObject(msg);
-            out.flush();
         }
         catch(IOException ioException){
             ioException.printStackTrace();
@@ -102,4 +80,16 @@ public class Client
             ioException.printStackTrace();
         }
     }
+    public static void sendMessage(byte[] msg)
+    {
+        try{
+            //stream write the message
+            out.write(msg);
+            out.flush();
+        }
+        catch(IOException ioException){
+            ioException.printStackTrace();
+        }
+    }
+
 }
