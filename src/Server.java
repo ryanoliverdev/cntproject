@@ -1,26 +1,41 @@
 import java.net.*;
 import java.io.*;
-
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 public class Server 
 {
-    Server(Peer peer)
-    {
-        sPort = peer.portNumber;
-        peerID = peer.peerID;
-        System.out.println("Peer " + peerID + " able to send on port " + sPort);
+    Server(Peer peer){
+        int portNum = peer.portNumber;
+        System.out.println("Server running on port " + portNum);
+        ServerSocket listener;
+        try {
+            listener = new ServerSocket(portNum);
+            int clientNum = 1;
+            try {
+                while(true) {
+                    new Handler(listener.accept(),clientNum).start();
+                    System.out.println("Client " + clientNum + " is connected!");
+                    clientNum++;
+                }
+            } finally {
+                listener.close();
+            }
+        }catch(IOException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
      * A handler thread class.  Handlers are spawned from the listening
      * loop and are responsible for dealing with a single client's requests.
      */
-    private static class Handler extends Thread 
+    private static class Handler extends Thread
     {
-        private String clientMessage;    //message received from the client
-        private String serverMessage;    //message sent to client
+        private byte[] clientMessage;    //message received from the client
+        private byte[] serverMessage;    //message sent to client
         private Socket connection;
-        private ObjectInputStream in;	//stream read from the socket
-        private ObjectOutputStream out;    //stream write to the socket
+        private DataInputStream in;	//stream read from the socket
+        private DataOutputStream out;    //stream write to the socket
         private int no;		//The index number of the client
 
         private boolean completedHandshake = false;
@@ -36,60 +51,72 @@ public class Server
             try
             {
                 //initialize Input and Output streams
-                out = new ObjectOutputStream(connection.getOutputStream());
+                out = new DataOutputStream(connection.getOutputStream());
                 out.flush();
-                in = new ObjectInputStream(connection.getInputStream());
-                try
+                in = new DataInputStream(connection.getInputStream());
+                while(true)
                 {
-                    while(true)
+                    //receive the message sent from the client
+                    byte[] buffer = new byte[32];
+                    int bytesRead = in.read(buffer);
+                    byte[] headerBytes = Arrays.copyOfRange(buffer, 0, 18);
+                    byte[] expectedHeader = "P2PFILESHARINGPROJ".getBytes(StandardCharsets.UTF_8);
+
+
+                    if (Arrays.equals(headerBytes, expectedHeader))
                     {
-                        //receive the message sent from the client
-                        clientMessage = (String)in.readObject();
-                        //show the message to the user
-                        System.out.println("Received message: " + clientMessage + " from client " + no);
-                        //send message back
-                        serverMessage = "hi";
-                        if (clientMessage.contains("P2PFILESHARINGPROJ")) 
+                        String peerIDStr = "";
+                        for (int i = 0; i < 4; i++)
                         {
-                            // In reality, this would be another peer sending another handshake
-                            sendMessage(clientMessage);
-                            System.out.println("Completing operations in server...");
-                            completedHandshake = true;
+                            peerIDStr += (char) buffer[28 + i];
                         }
-                        if (!completedHandshake)
+                        System.out.println("Handshake recieved from peer " + peerIDStr);
+                        completedHandshake = true;
+                    }
+                    else
+                    {
+                        System.out.println(Arrays.toString(buffer) + " != " + Arrays.toString(expectedHeader));
+                        continue;
+                    }
+                    if (completedHandshake)
+                    {
+                        int messageType = 0;
+                        try
                         {
-                            sendMessage("Need to complete handshake");
+                            messageType = 0;
+                        } catch (NumberFormatException nfe) {
+                            // do something
                         }
-                        if (completedHandshake) 
-                        {
-                            // for testing
-                            int messageType = 0;
-                            try 
-                            {
-
-                                messageType = Integer.parseInt(clientMessage);
-                            } catch (NumberFormatException nfe) {
-                                // do something
-                                System.out.println(clientMessage + " is not a number");
-                            }
-                            // the prints are placeholders for what will likely be function calls
-                            switch (messageType) {
-                                case 0 -> sendMessage("Choke");
-                                case 1 -> sendMessage("Unchoke");
-                                case 2 -> sendMessage("Interested");
-                                case 3 -> sendMessage("Not Interested");
-                                case 4 -> sendMessage("Have");
-                                case 5 -> sendMessage("Bitfield");
-                                case 6 -> sendMessage("Request");
-                                case 7 -> sendMessage("Piece");
-                                default -> sendMessage(clientMessage);
-
-                            }
+                        // the prints are placeholders for what will likely be function calls
+                        switch (messageType) {
+                            case 0:
+                                sendMessage("Choke".getBytes());
+                                break;
+                            case 1:
+                                sendMessage("Unchoke".getBytes());
+                                break;
+                            case 2:
+                                sendMessage("Interested".getBytes());
+                                break;
+                            case 3:
+                                sendMessage("Not Interested".getBytes());
+                                break;
+                            case 4:
+                                sendMessage("Have".getBytes());
+                                break;
+                            case 5:
+                                sendMessage("Bitfield".getBytes());
+                                break;
+                            case 6:
+                                sendMessage("Request".getBytes());
+                                break;
+                            case 7:
+                                sendMessage("Piece".getBytes());
+                                break;
+                            default:
+                                sendMessage("Default".getBytes());
                         }
                     }
-                }
-                catch(ClassNotFoundException classnot){
-                    System.err.println("Data received in unknown format");
                 }
             }
             catch(IOException ioException){
@@ -112,11 +139,10 @@ public class Server
         }
 
         //send a message to the output stream
-        public void sendMessage(String msg) {
+        public void sendMessage(byte[] msg) {
             try {
-                out.writeObject(msg);
+                out.write(msg);
                 out.flush();
-                System.out.println("Send message: " + msg + " to Client " + no);
             } catch (IOException ioException) {
                 ioException.printStackTrace();
             }

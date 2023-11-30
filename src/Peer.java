@@ -7,8 +7,6 @@ import java.nio.ByteBuffer;
 
 public class Peer
 {
-    String commonPath = "/Common.cfg";
-    String peerInfoPath = "/PeerInfo.cfg";
     int unchokingInterval;
     int optimisticUnchokingInterval;
     String fileName;
@@ -28,198 +26,6 @@ public class Peer
     // PeerID's of preferredNeighbors along with download rates (maybe can get rid of these after sorting)
     private ArrayList<int[]> preferredNeighbors;
     private ArrayList<Integer> interestedNeighbors;
-
-    // Private Functions
-
-    // Message Bodies
-    private void /*byte[] */ sendHandshakeMessage()
-    {
-        //String message = "P2PFILESHARINGPROJ0000000000" + peerID;
-        byte[] handshakeMessage = new byte[32]; //32 byte handshake message: 18, 10, 4
-        byte[] peerIDbytes = ByteBuffer.allocate(4).putInt(peerID).array();
-        byte[] header = "P2PFILESHARINGPROJ".getBytes();
-
-        //put header into handshake message array
-        System.arraycopy(header, 0, handshakeMessage, 0, header.length);
-
-        for(int i = 18; i < 28; i++)//start in array at index 18(after header)
-        {
-            handshakeMessage[i] = 0; //put in 0 bits for 10 bytes
-        }
-
-        System.arraycopy(peerIDbytes, 0, handshakeMessage, 28, 4);
-
-        //below line for debugging, remove ltr
-        byte[] p2p = ("P2PFILESHARINGPROJ0000000000" + peerID).getBytes();
-
-        client.sendMessage(p2p);
-    }
-    private void sendChokeMessage()
-    {
-        int messageType = 0; // "choke" message type
-
-        // Create a byte array to store the message
-        byte[] chokeMessage = new byte[5]; // 4 bytes for length, 1 byte for message type
-
-        // Calculate the message length (1 byte for the type, no payload)
-        int messageLength = 1;
-        ByteBuffer buffer = ByteBuffer.allocate(4);
-        buffer.putInt(messageLength);
-        System.arraycopy(buffer.array(), 0, chokeMessage, 0, 4);
-
-        // Set the message type
-        chokeMessage[4] = (byte) messageType;
-
-        // Simulate sending the "choke" message to the peer
-        client.sendMessage(chokeMessage);
-
-    }
-    private void sendUnChokeMessage()
-    {
-        int messageType = 1; // "unchoke" message type
-
-        // Create a byte array to store the message
-        byte[] unchokeMessage = new byte[5]; // 4 bytes for length, 1 byte for message type
-
-        // Calculate the message length (1 byte for the type, no payload)
-        int messageLength = 1;
-        ByteBuffer buffer = ByteBuffer.allocate(4);
-        buffer.putInt(messageLength);
-        System.arraycopy(buffer.array(), 0, unchokeMessage, 0, 4);
-
-        // Set the message type
-        unchokeMessage[4] = (byte) messageType;
-
-        // Send message to neighbor peers
-        client.sendMessage(unchokeMessage);
-    }
-    private void sendInterestMessage()
-    {
-        int messageType = 2; // "interest" message type
-
-        // Create a byte array to store the message
-        byte[] interestMessage = new byte[5]; // 4 bytes for length, 1 byte for message type
-
-        // Calculate the message length (1 byte for the type, no payload)
-        int messageLength = 1;
-        ByteBuffer buffer = ByteBuffer.allocate(4);
-        buffer.putInt(messageLength);
-        System.arraycopy(buffer.array(), 0, interestMessage, 0, 4);
-
-        // Set the message type
-        interestMessage[4] = (byte) messageType;
-
-        // Send peer message
-        client.sendMessage(interestMessage);
-    }
-    private void sendUnInterestMessage()
-    {
-        int messageType = 3; // "uninterest" message type
-
-        // Create a byte array to store the message
-        byte[] uninterestMessage = new byte[5]; // 4 bytes for length, 1 byte for message type
-
-        // Calculate the message length (1 byte for the type, no payload)
-        int messageLength = 1;
-        ByteBuffer buffer = ByteBuffer.allocate(4);
-        buffer.putInt(messageLength);
-        System.arraycopy(buffer.array(), 0, uninterestMessage, 0, 4);
-
-        // Set the message type
-        uninterestMessage[4] = (byte) messageType;
-
-        // Send peer message
-        client.sendMessage(uninterestMessage);
-    }
-    private void sendHasFileMessage(byte[] indexField)
-    {
-        int messageType = 4; // "hasFile" message type
-
-        // Create a byte array to store the message
-        byte[] hasFileMessage = new byte[9]; // 4 bytes for length, 1 byte for message type, 4 bytes for payload
-
-        // Calculate the message length (1 byte for the type)
-        int messageLength = 1;
-        ByteBuffer buffer = ByteBuffer.allocate(4);
-        buffer.putInt(messageLength);
-        System.arraycopy(buffer.array(), 0, hasFileMessage, 0, 4);
-
-        // Set the message type
-        hasFileMessage[4] = (byte) messageType;
-
-        // Calculate the payload length (4 bytes for the indexField)
-        System.arraycopy(indexField, 0, hasFileMessage, 5, 4);
-
-        // Send peer message
-        client.sendMessage(hasFileMessage);
-    }
-    private void sendBitfieldMessage(byte[] bitfield)
-    {
-        int messageType = 5; // "BitField" message type
-
-        // Create a byte array to store the message
-        byte[] bitfieldMessage = new byte[9]; // 4 bytes for length, 1 byte for message type, 4 bytes for payload
-
-        // Calculate the message length (1 byte for the type)
-        int messageLength = 1;
-        ByteBuffer buffer = ByteBuffer.allocate(4);
-        buffer.putInt(messageLength);
-        System.arraycopy(buffer.array(), 0, bitfieldMessage, 0, 4);
-
-        // Set the message type
-        bitfieldMessage[4] = (byte) messageType;
-
-        // Calculate the payload length (4 bytes for the indexField)
-        System.arraycopy(bitfield, 0, bitfieldMessage, 5, bitfield.length);
-
-        // Send peer message
-        client.sendMessage(bitfieldMessage);
-    }
-    private void sendRequestMessage(byte[] indexField){
-        int messageType = 4; // "hasFile" message type
-
-        // Create a byte array to store the message
-        byte[] requestMessage = new byte[9]; // 4 bytes for length, 1 byte for message type, 4 bytes for payload
-
-        // Calculate the message length (1 byte for the type)
-        int messageLength = 1;
-        ByteBuffer buffer = ByteBuffer.allocate(4);
-        buffer.putInt(messageLength);
-        System.arraycopy(buffer.array(), 0, requestMessage, 0, 4);
-
-        // Set the message type
-        requestMessage[4] = (byte) messageType;
-
-        // Calculate the payload length (4 bytes for the indexField)
-        System.arraycopy(indexField, 0, requestMessage, 5, 4);
-
-        // Send peer message
-        client.sendMessage(requestMessage);
-    }
-    private void sendPiecesMessage(byte[] indexField, byte[] pieceContent)
-    {
-        int messageType = 4; // "hasFile" message type
-
-        // Create a byte array to store the message
-        byte[] sendPiecesMessage = new byte[9]; // 4 bytes for length, 1 byte for message type, 4 bytes for payload
-
-        // Calculate the message length (1 byte for the type)
-        int messageLength = 1;
-        ByteBuffer buffer = ByteBuffer.allocate(4);
-        buffer.putInt(messageLength);
-        System.arraycopy(buffer.array(), 0, sendPiecesMessage, 0, 4);
-
-        // Set the message type
-        sendPiecesMessage[4] = (byte) messageType;
-
-        // Calculate the payload length (4 bytes for the indexField)
-        System.arraycopy(indexField, 0, sendPiecesMessage, 5, 4);
-        System.arraycopy(pieceContent, 0, sendPiecesMessage, 9, pieceContent.length);
-        // Send peer message
-        client.sendMessage(sendPiecesMessage);
-    }
-
-    // Message Types
     private void chokePeer(int srcPeerID)
     {
         isChokedPeer.put(srcPeerID, true);
@@ -323,45 +129,45 @@ public class Peer
         byte type = message[4];
         switch(type) {
             // choke peer type
-            case 0 -> {
+            case 0:
                 chokePeer(srcPeerID);
                 writeLogMessage(type, peerID, srcPeerID, 0, 0);
-            }
+                break;
             // unchoke message type
-            case 1 -> {
+            case 1:
                 unChokePeer(srcPeerID);
                 writeLogMessage(type, peerID, srcPeerID, 0, 0);
-            }
+                break;
             // setInterest message type
-            case 2 -> {
+            case 2:
                 setInterestPeer(srcPeerID);
                 writeLogMessage(type, peerID, srcPeerID, 0, 0);
-            }
+                break;
             // unsetInterest message type
-            case 3 -> {
+            case 3:
                 unSetInterestPeer(srcPeerID);
                 writeLogMessage(type, peerID, srcPeerID, 0, 0);
-            }
+                break;
             // hasFile message type
-            case 4 -> {
+            case 4:
                 setHasFilePeer(srcPeerID);
                 writeLogMessage(type, peerID, srcPeerID, 0, 0);
-            }
+                break;
             // bitfield message type
-            case 5 -> {
+            case 5:
                 sendBitfield(srcPeerID);
                 writeLogMessage(type, peerID, srcPeerID, 0, 0);
-            }
+                break;
             // request message type
-            case 6 -> {
+            case 6:
                 requestPieces(srcPeerID);
                 writeLogMessage(type, peerID, srcPeerID, 0, 0);
-            }
+                break;
             // pieces message type
-            case 7 -> {
+            case 7:
                 sendPieces(srcPeerID);
                 writeLogMessage(type, peerID, srcPeerID, 0, 0);
-            }
+                break;
         }
     }
 
@@ -461,64 +267,8 @@ public class Peer
         }
 
     }
-    public static LinkedHashMap<String, String> readCommonInfo(String path)
+    public Peer(int id, LinkedHashMap<String, String> commonInfo, LinkedHashMap<Integer, String[]> peerInfo)
     {
-
-        LinkedHashMap<String, String> commonInfo = new LinkedHashMap<String, String>();
-
-        try {
-            File commonFile = new File(path);
-            Scanner reader = new Scanner(commonFile);
-
-            while(reader.hasNextLine())
-            {
-                String data = reader.nextLine();
-                String[] dataArr = data.split(" ");
-
-                commonInfo.put(dataArr[0], dataArr[1]);
-            }
-        }
-        catch (FileNotFoundException e)
-        {
-            System.out.println("File not found");
-        }
-
-        return commonInfo;
-    }
-
-    public static LinkedHashMap<Integer, String[]> readPeerInfo(String path)
-    {
-        LinkedHashMap<Integer, String[]> peerInfo = new LinkedHashMap<Integer, String[]>();
-
-        try {
-            File peerFile = new File(path);
-            Scanner reader = new Scanner(peerFile);
-
-            while(reader.hasNextLine())
-            {
-                String data = reader.nextLine();
-                String[] dataArr = data.split(" ");
-
-                Integer peerID = Integer.parseInt(dataArr[0]);
-                String[] peerData = {dataArr[1], dataArr[2], dataArr[3]};
-
-                peerInfo.put(peerID, peerData);
-            }
-        }
-        catch (FileNotFoundException e)
-        {
-            System.out.println("File not found");
-        }
-
-        return peerInfo;
-    }
-    public Peer(int id)
-    {
-
-        // Reading in all Common.cfg Info
-        LinkedHashMap<String, String> commonInfo = readCommonInfo(commonPath);
-        LinkedHashMap<Integer, String[]> peerInfo = readPeerInfo(peerInfoPath);
-
         peerID = id;
         unchokingInterval = Integer.parseInt(commonInfo.get("UnchokingInterval"));
         optimisticUnchokingInterval = Integer.parseInt(commonInfo.get("OptimisticUnchokingInterval"));
@@ -532,15 +282,7 @@ public class Peer
         portNumber = Integer.parseInt(peerInfo.get(id)[1]);
         hasFile = Boolean.parseBoolean(peerInfo.get(id)[2]);
 
-        try {
-            server = new Server();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
 
-        // Initializing client
-        client = new Client(peerID);
-        client.run();
     }
 
 }
