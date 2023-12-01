@@ -103,7 +103,7 @@ public class Messages {
         byte[] hasFileMessage = new byte[9]; // 4 bytes for length, 1 byte for message type, 4 bytes for payload
 
         // Calculate the message length (1 byte for the type)
-        int messageLength = 1;
+        int messageLength = 5;
         ByteBuffer buffer = ByteBuffer.allocate(4);
         buffer.putInt(messageLength);
         System.arraycopy(buffer.array(), 0, hasFileMessage, 0, 4);
@@ -122,10 +122,10 @@ public class Messages {
         int messageType = 5; // "BitField" message type
 
         // Create a byte array to store the message
-        byte[] bitfieldMessage = new byte[9]; // 4 bytes for length, 1 byte for message type, 4 bytes for payload
+        byte[] bitfieldMessage = new byte[5 + bitfield.length]; // 4 bytes for length, 1 byte for message type, variable payload
 
         // Calculate the message length (1 byte for the type)
-        int messageLength = 1;
+        int messageLength = 1 + bitfield.length;
         ByteBuffer buffer = ByteBuffer.allocate(4);
         buffer.putInt(messageLength);
         System.arraycopy(buffer.array(), 0, bitfieldMessage, 0, 4);
@@ -146,7 +146,7 @@ public class Messages {
         byte[] requestMessage = new byte[9]; // 4 bytes for length, 1 byte for message type, 4 bytes for payload
 
         // Calculate the message length (1 byte for the type)
-        int messageLength = 1;
+        int messageLength = 5;
         ByteBuffer buffer = ByteBuffer.allocate(4);
         buffer.putInt(messageLength);
         System.arraycopy(buffer.array(), 0, requestMessage, 0, 4);
@@ -165,10 +165,10 @@ public class Messages {
         int messageType = 4; // "hasFile" message type
 
         // Create a byte array to store the message
-        byte[] sendPiecesMessage = new byte[9]; // 4 bytes for length, 1 byte for message type, 4 bytes for payload
+        byte[] sendPiecesMessage = new byte[9]; // 4 bytes for length, 1 byte for message type, V
 
         // Calculate the message length (1 byte for the type)
-        int messageLength = 1;
+        int messageLength = 5;
         ByteBuffer buffer = ByteBuffer.allocate(4);
         buffer.putInt(messageLength);
         System.arraycopy(buffer.array(), 0, sendPiecesMessage, 0, 4);

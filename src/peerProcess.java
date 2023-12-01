@@ -9,11 +9,12 @@ public class peerProcess {
 
         int peerID = Integer.parseInt(args[0]);
         Peer peer = new Peer(peerID, commonInfo, peerInfo);
-        // Initialize server to listen
+
 
         // Initializing client
         Client client = new Client(peer, peerInfo);
-        client.run();
+        client.start();
+        // Initialize server to listen
         Server server = new Server(peer);
     }
 

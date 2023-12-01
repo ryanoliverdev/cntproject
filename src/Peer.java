@@ -17,36 +17,66 @@ public class Peer
     int portNumber;
     boolean hasFile;
     int kNeighbors;
-    HashMap<Integer, Boolean> isChokedPeer;
-    HashMap<Integer, Boolean> isInterestedPeer;
-    HashMap<Integer, Boolean> hasFilePeer;
+
+    byte[] bitfield = new byte[0];
+    HashMap<Integer, Boolean> isChokedPeer = new HashMap<>();
+    HashMap<Integer, Boolean> isInterestedPeer = new HashMap<>();
+    HashMap<Integer, Boolean> hasFilePeers = new HashMap<>();
+    HashMap<Integer, byte[]> hasPiecesPeers = new HashMap<>();
+
     Client client;
 
     Server server;
     // PeerID's of preferredNeighbors along with download rates (maybe can get rid of these after sorting)
     private ArrayList<int[]> preferredNeighbors;
     private ArrayList<Integer> interestedNeighbors;
-    private void chokePeer(int srcPeerID)
+    public void chokePeer(int srcPeerID)
     {
         isChokedPeer.put(srcPeerID, true);
     }
-    private void unChokePeer(int srcPeerID)
+    public void unChokePeer(int srcPeerID)
     {
         isChokedPeer.put(srcPeerID, false);
     }
-    private void setInterestPeer(int srcPeerID)
+    public void setInterestPeer(int srcPeerID)
     {
         isInterestedPeer.put(srcPeerID, true);
     }
-    private void unSetInterestPeer(int srcPeerID)
+    public void unSetInterestPeer(int srcPeerID)
     {
         isInterestedPeer.put(srcPeerID, false);
     }
-    private void setHasFilePeer(int srcPeerID)
+    public void setPeerPiecesBitfield(int srcPeerID, byte[] bitfield)
     {
-        hasFilePeer.put(srcPeerID, true);
+        hasPiecesPeers.put(srcPeerID, bitfield);
     }
-    private void sendBitfield(int srcPeerID)
+    public void setHasFile(int srcPeerID)
+    {
+        hasFilePeers.put(srcPeerID, true);
+    }
+    public void setOwnBitfield(byte[] bf)
+    {
+        this.bitfield = bf;
+    }
+
+    public Peer(int id, LinkedHashMap<String, String> commonInfo, LinkedHashMap<Integer, String[]> peerInfo)
+    {
+        peerID = id;
+        unchokingInterval = Integer.parseInt(commonInfo.get("UnchokingInterval"));
+        optimisticUnchokingInterval = Integer.parseInt(commonInfo.get("OptimisticUnchokingInterval"));
+        fileName = commonInfo.get("FileName");
+        fileSize = Integer.parseInt(commonInfo.get("FileSize"));
+        pieceSize = Integer.parseInt(commonInfo.get("PieceSize"));
+        kNeighbors = Integer.parseInt(commonInfo.get("NumberOfPreferredNeighbors"));
+        // Reading in all PeerInfo.cfg Info
+
+        hostName = peerInfo.get(id)[0];
+        portNumber = Integer.parseInt(peerInfo.get(id)[1]);
+        hasFile = Integer.parseInt(peerInfo.get(id)[2]) == 1;
+
+
+    }
+    public void sendBitfield(int srcPeerID)
     {
         /*‘bitfield’ messages is only sent as the first message right after handshaking is done when
         a connection is established. ‘bitfield’ messages have a bitfield as its payload. Each bit in
@@ -55,26 +85,26 @@ public class Peer
         respectively. The next one corresponds to piece indices 8 – 15, etc. Spare bits at the end
         are set to zero. Peers that don’t have anything yet may skip a ‘bitfield’ message */
     }
-    private void requestPieces(int srcPeerID)
+    public void requestPieces(int srcPeerID)
     {
         /*request’ messages have a payload which consists of a 4-byte piece index field. Note
         that ‘request’ message payload defined here is different from that of BitTorrent. We don’t
         divide a piece into smaller subpieces.
         */
     }
-    private void sendPieces(int srcPeerID)
+    public void sendPieces(int srcPeerID)
     {
         /*
          * piece’ messages have a payload which consists of a 4-byte piece index field and the
             content of the piece.   
          */
     }
-    private int getDownloadRate(int peerID)
+    public int getDownloadRate(int peerID)
     {
         // needs implementation
         return 0;
     }
-    private ArrayList<int[]> getPreferredNeighbors(int k, ArrayList<Integer> interested)
+    public ArrayList<int[]> getPreferredNeighbors(int k, ArrayList<Integer> interested)
     {
         int n = interested.size();
         ArrayList<int[]> prefNeighbors = new ArrayList<>(kNeighbors);
@@ -95,7 +125,6 @@ public class Peer
         return result;
     }
 
-    // Public Functions
     public void requestPreferredNeighbors(int k, ArrayList<Integer> neighbors)
     {
         if (!preferredNeighbors.isEmpty()){
@@ -150,7 +179,7 @@ public class Peer
                 break;
             // hasFile message type
             case 4:
-                setHasFilePeer(srcPeerID);
+                setPeerPiecesBitfield(srcPeerID, message);
                 writeLogMessage(type, peerID, srcPeerID, 0, 0);
                 break;
             // bitfield message type
@@ -267,22 +296,6 @@ public class Peer
         }
 
     }
-    public Peer(int id, LinkedHashMap<String, String> commonInfo, LinkedHashMap<Integer, String[]> peerInfo)
-    {
-        peerID = id;
-        unchokingInterval = Integer.parseInt(commonInfo.get("UnchokingInterval"));
-        optimisticUnchokingInterval = Integer.parseInt(commonInfo.get("OptimisticUnchokingInterval"));
-        fileName = commonInfo.get("FileName");
-        fileSize = Integer.parseInt(commonInfo.get("FileSize"));
-        pieceSize = Integer.parseInt(commonInfo.get("PieceSize"));
-        kNeighbors = Integer.parseInt(commonInfo.get("NumberOfPreferredNeighbors"));
-        // Reading in all PeerInfo.cfg Info
 
-        hostName = peerInfo.get(id)[0];
-        portNumber = Integer.parseInt(peerInfo.get(id)[1]);
-        hasFile = Boolean.parseBoolean(peerInfo.get(id)[2]);
-
-
-    }
 
 }

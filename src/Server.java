@@ -59,96 +59,112 @@ public class Server
                 out = new DataOutputStream(connection.getOutputStream());
                 out.flush();
                 in = new DataInputStream(connection.getInputStream());
+                int destPeerID = -1;
                 while(true)
                 {
-                    //receive the message sent from the client
-                    byte[] buffer = new byte[32];
-                    int bytesRead = in.read(buffer);
-                    byte[] headerBytes = Arrays.copyOfRange(buffer, 0, 18);
-                    byte[] expectedHeader = "P2PFILESHARINGPROJ".getBytes(StandardCharsets.UTF_8);
-
-
-                    if (!completedHandshake && Arrays.equals(headerBytes, expectedHeader))
-                    {
-                        String peerIDStr = "";
-                        for (int i = 0; i < 4; i++)
-                        {
-                            peerIDStr += (char) buffer[28 + i];
-                        }
-                        System.out.println("Handshake recieved from peer " + peerIDStr);
-                        byte[] handshakeMessage = Messages.getHandshakeMessage(peer.peerID);
-                        sendMessage(handshakeMessage);
-                        completedHandshake = true;
-
-                    }
-                    if (completedHandshake)
-                    {
-                        in.read(clientMessage);
-                        if (peer.hasFile)
-                        {
-                            // bitfield
-                            int numOfPieces = peer.fileSize / peer.pieceSize;
-                            byte[] bitfield = ByteBuffer.allocate(4).putInt(numOfPieces).array();
-                            if (bitfield.length < 4) {
-                                byte[] paddedBitfield = new byte[4];
-                                System.arraycopy(bitfield, 0, paddedBitfield, 0, bitfield.length);
-                                bitfield = paddedBitfield;
+                    // Handshake server send and send initial bitfield
+                    if (!completedHandshake){
+                        byte[] buffer = new byte[32];
+                        int bytesRead = in.read(buffer);
+                        byte[] headerBytes = Arrays.copyOfRange(buffer, 0, 18);
+                        byte[] expectedHeader = "P2PFILESHARINGPROJ".getBytes(StandardCharsets.UTF_8);
+                        if (Arrays.equals(headerBytes, expectedHeader)) {
+                            String peerIDStr = "";
+                            for (int i = 0; i < 4; i++) {
+                                peerIDStr += (char) buffer[28 + i];
                             }
-                            byte[] bitfieldMessage = Messages.getBitfieldMessage(bitfield);
-                            sendMessage(bitfieldMessage);
-                        }
+                            System.out.println("Handshake received from peer " + peerIDStr);
+                            destPeerID = Integer.parseInt(peerIDStr);
+                            byte[] handshakeMessage = Messages.getHandshakeMessage(peer.peerID);
+                            sendMessage(handshakeMessage, out);
+                            completedHandshake = true;
 
-                        int messageType = 0;
-                        try
-                        {
-                            messageType = 0;
-                        } catch (NumberFormatException nfe) {
-                            // do something
-                        }
-                        // the prints are placeholders for what will likely be function calls
-                        switch (messageType) {
-                            case 0:
-                                byte[] chokeMessage = Messages.getChokeMessage();
-                                sendMessage(chokeMessage);
-                                break;
-                            case 1:
-                                byte[] unChokeMessage = Messages.getUnChokeMessage();
-                                sendMessage(unChokeMessage);
-                                break;
-                            case 2:
-                                byte[] interestedMessage = Messages.getInterestMessage();
-                                sendMessage(interestedMessage);
-                                break;
-                            case 3:
-                                byte[] unInterestedMessage = Messages.getUnInterestMessage();
-                                sendMessage(unInterestedMessage);
-                                break;
-                            case 4:
-                                byte[] hasFileMessage = Messages.getHasFileMessage("placeholder".getBytes());
-                                sendMessage(hasFileMessage);
-                                break;
-                            case 5:
-                                byte[] bitfieldMessage = Messages.getBitfieldMessage("placeholder".getBytes());
-                                sendMessage(bitfieldMessage);
-                                break;
-                            case 6:
-                                byte[] requestMessage = Messages.getRequestMessage("placeholder".getBytes());
-                                sendMessage(requestMessage);
-                                break;
-                            case 7:
-                                byte[] piecesMessage = Messages.getPiecesMessage("placeholder".getBytes(), "placeholder".getBytes());
-                                sendMessage(piecesMessage);
-                                break;
-                            default:
-                                sendMessage("placeholder".getBytes());
+                            // Send Bitfield
+                            // TO DO: I know I redid this, you can simplify it if you'd like
+                            if (peer.hasFile) {
+                                int numOfPieces = peer.fileSize / peer.pieceSize + 1;
+
+                                buffer = new byte[5 + (numOfPieces + 7) / 8];
+                                for (int i = 0; i < numOfPieces; i++) {
+                                    buffer[i / 8] |= 1 << (7 - (i % 8));
+                                }
+                                byte[] bitfield = Messages.getBitfieldMessage(buffer);
+                                peer.setOwnBitfield(bitfield);
+                                sendMessage(bitfield, out);
+                                System.out.println("Bitfield sent");
+                            }
                         }
                     }
+                    if (!completedHandshake) {
+                        // make sure handshake completes
+                        continue;
+                    }
+
+                    // Handshake over, process messages based on length and type
+
+                    // Message format for all other messages
+                    byte[] lengthBuffer = new byte[4];
+                    int length;
+                    // Read the type of the message
+                    byte[] typeBuffer = new byte[1];
+                    int type;
+                    byte[] messageBuffer;
+
+
+                    // Receive Next Message
+                    in.read(lengthBuffer);
+                    length = ByteBuffer.wrap(lengthBuffer).getInt();
+                    in.read(typeBuffer);
+                    type = typeBuffer[0];
+                    messageBuffer = new byte[length - 1];
+                    in.read(messageBuffer);
+                    // Bitfield Message Received
+                    if (type == 5) {
+                        System.out.println("Set bitfield for " + destPeerID);
+                        peer.setPeerPiecesBitfield(destPeerID, messageBuffer);
+                        peer.setHasFile(destPeerID);
+                        byte[] msg;
+                        if (messageBuffer.length > peer.bitfield.length)
+                        {
+                            // If there's physically more pieces
+                            msg = Messages.getInterestMessage();
+                            sendMessage(msg, out);
+                        }
+                        else {
+                            for (int i = 0; i < messageBuffer.length; i++) {
+                                if (messageBuffer[i] != peer.bitfield[i]) {
+                                    msg = Messages.getInterestMessage();
+                                    sendMessage(msg, out);
+                                    break;
+                                }
+                                if (i == messageBuffer.length - 1) {
+                                    msg = Messages.getUnInterestMessage();
+                                    sendMessage(msg, out);
+                                }
+                            }
+                        }
+                    }
+                    // Interested Message Received
+                    if (type == 2)
+                    {
+                        // Switch bool to true for interested peer
+                        System.out.println("Set interest for " + destPeerID);
+                        peer.setInterestPeer(destPeerID);
+                    }
+                    // Uninterested Message Received
+                    if (type == 3)
+                    {
+                        // not sure if this is redundant but
+                        System.out.println("Set uninterest for " + destPeerID);
+                        peer.unSetInterestPeer(destPeerID);
+                    }
+
                 }
             }
             catch(IOException ioException){
                 System.out.println("Disconnect with Client " + no);
             }
-            finally 
+            finally
             {
                 //Close connections
                 try
@@ -165,7 +181,7 @@ public class Server
         }
 
         //send a message to the output stream
-        public void sendMessage(byte[] msg) {
+        public void sendMessage(byte[] msg, DataOutputStream out) {
             try {
                 out.write(msg);
                 out.flush();
