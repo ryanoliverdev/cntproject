@@ -6,8 +6,9 @@ public class PeerThread extends Thread{
     }
     public void run()
     {
-        int unchokingInterval = peer.unchokingInterval;
-        int optimisticUnchokingInterval = peer.optimisticUnchokingInterval;
+        // Convert to milliseconds
+        int unchokingInterval = peer.unchokingInterval * 1000;
+        int optimisticUnchokingInterval = peer.optimisticUnchokingInterval * 1000;
         while (true) {
             if (unchokingInterval < optimisticUnchokingInterval) {
                 try {
@@ -15,7 +16,7 @@ public class PeerThread extends Thread{
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
-                // Perform unchoking operation
+                // Determine preferred neighbors
                 try {
                     Thread.sleep(optimisticUnchokingInterval - unchokingInterval);
                 } catch (InterruptedException e) {
@@ -28,7 +29,7 @@ public class PeerThread extends Thread{
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
-                // Perform optimistic unchoking operation
+                // Determine preferred neighbors
 
                 try {
                     Thread.sleep(unchokingInterval - optimisticUnchokingInterval);

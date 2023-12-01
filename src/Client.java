@@ -87,7 +87,8 @@ public class Client extends Thread
                                 }
                             }
                         }
-
+                        // Add new choked peer
+                        peer.chokePeer(destPeerID);
                         // Message format for all other messages
                         byte[] lengthBuffer = new byte[4];
                         int length;
