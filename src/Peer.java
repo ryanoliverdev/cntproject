@@ -1,5 +1,6 @@
 import java.io.*;
 import java.net.ServerSocket;
+import java.net.Socket;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -19,17 +20,19 @@ public class Peer
     int kNeighbors;
 
     byte[] bitfield = new byte[0];
+    int optimisticallyUnChokedNeighbor;
     HashMap<Integer, Boolean> isChokedPeer = new HashMap<>();
     HashMap<Integer, Boolean> isInterestedPeer = new HashMap<>();
     HashMap<Integer, Boolean> hasFilePeers = new HashMap<>();
     HashMap<Integer, byte[]> hasPiecesPeers = new HashMap<>();
+    HashMap<Integer, Double> neighbors = new HashMap<>();
 
-    Client client;
+    HashMap<Integer, Socket> serverSockets = new HashMap<>();
+    // Stores neighbors and download rate (as a double)
 
-    Server server;
     // PeerID's of preferredNeighbors along with download rates (maybe can get rid of these after sorting)
-    private ArrayList<int[]> preferredNeighbors;
-    private ArrayList<Integer> interestedNeighbors;
+    public ArrayList<Integer> preferredNeighbors = new ArrayList<>();
+    public ArrayList<Integer> interestedNeighbors = new ArrayList<>();
     public void chokePeer(int srcPeerID)
     {
         isChokedPeer.put(srcPeerID, true);
@@ -104,54 +107,78 @@ public class Peer
         // needs implementation
         return 0;
     }
-    public ArrayList<int[]> getPreferredNeighbors(int k, ArrayList<Integer> interested)
+    public void setPreferredNeighbors(int k)
     {
-        int n = interested.size();
-        ArrayList<int[]> prefNeighbors = new ArrayList<>(kNeighbors);
-
-        for (int i = 0; i < n; i++)
+        // Collect interested neighbors into an array
+        for (Map.Entry<Integer, Boolean> entry : isInterestedPeer.entrySet())
         {
-            // pass tuple with download rate and id to be sorted later
-            int currNeighbor = interested.get(i);
-            int rate = getDownloadRate(currNeighbor);
-            int [] tuple = {currNeighbor, rate};
-            prefNeighbors.add(tuple);
+            Integer neighborID = entry.getKey();
+            Boolean interested = entry.getValue();
+            if (interested)
+            {
+                interestedNeighbors.add(neighborID);
+            }
         }
-
-        Collections.sort(prefNeighbors, Comparator.comparing(a -> a[1]));
-        // get the top k
-        List<int[]> lastKElements = prefNeighbors.subList(n - k, n);
-        ArrayList<int[]> result = new ArrayList<>(lastKElements);
-        return result;
-    }
-
-    public void requestPreferredNeighbors(int k, ArrayList<Integer> neighbors)
-    {
-        if (!preferredNeighbors.isEmpty()){
-            preferredNeighbors = getPreferredNeighbors(k, neighbors);
+        if (hasFile)
+        {
+            // preferred neighbors become a random list of k interested
+            Collections.shuffle(interestedNeighbors);
+            int endIndex = Math.min(k, interestedNeighbors.size());
+            preferredNeighbors = new ArrayList<>(interestedNeighbors.subList(0, endIndex));
         }
         else
         {
-            // get k random neighbors
-            for (int i = 0; i < k; i++)
-            {
-                int randNum = (int) (Math.random() * neighbors.size());
-                // random peer from interested neighbors
-                int currPeer = neighbors.get(randNum);
-                if (preferredNeighbors.contains(currPeer))
-                {
-                    // repeat iteration if duplicate
-                    i--;
+            // This should even work on initialization
+            Collections.sort(interestedNeighbors, new Comparator<Integer>() {
+                @Override
+                public int compare(Integer o1, Integer o2) {
+                    return neighbors.get(o1).compareTo(neighbors.get(o2));
                 }
-                else
-                {
-                    // set download rate to 0 at start
-                    int [] prefNeighbor = {currPeer, 0};
-                    preferredNeighbors.add(prefNeighbor);
-                }
-            }
+            });
+            int endIndex = Math.min(k, interestedNeighbors.size());
+            preferredNeighbors = new ArrayList<>(interestedNeighbors.subList(0, endIndex));
         }
     }
+    public ArrayList<Integer> getPreferredNeighbors()
+    {
+        ArrayList<Integer> prefNeighbors = new ArrayList<>(preferredNeighbors);
+        return prefNeighbors;
+    }
+
+    public void setInitialNeighbors()
+    {
+        // Choked contains all available neighbors (unchoked or choked)
+        int numOfNeighbors = isChokedPeer.size();
+        HashMap<Integer, Double> newNeighbors = new HashMap<>();
+        for (Map.Entry<Integer, Boolean> entry : isChokedPeer.entrySet()) {
+            Integer peerID = entry.getKey();
+            // initial download rate = 0.0
+            newNeighbors.put(peerID, 0.0);
+        }
+        this.neighbors = newNeighbors;
+   }
+
+   public void setOptimisticallyUnChokedNeighbor()
+   {
+       // get all choked neighbors that are interested
+       ArrayList<Integer> possibleOptimisticNeighbors = new ArrayList<>();
+       for (Map.Entry<Integer, Boolean> entry : isChokedPeer.entrySet()) {
+           Integer peerID = entry.getKey();
+           Boolean choked = entry.getValue();
+           if (choked && isInterestedPeer.get(peerID))
+           {
+               possibleOptimisticNeighbors.add(peerID);
+           }
+       }
+       Random rand = new Random();
+       int randomIndex = rand.nextInt(possibleOptimisticNeighbors.size());
+       optimisticallyUnChokedNeighbor = possibleOptimisticNeighbors.get(randomIndex);
+
+   }
+   public int getOptimisticallyUnChokedNeighbor()
+   {
+       return optimisticallyUnChokedNeighbor;
+   }
     public void interpretPeerMessage(int srcPeerID, byte[] message)
     {
         // message type
@@ -240,7 +267,7 @@ public class Peer
                 logFileData = formattedDateTime + ": Peer " + peerID + " has the preferred neighbors ";
                 // getting the preferred neighbors from the arraylist
                 for (int i = 0; i < preferredNeighbors.size(); i++) {
-                    logFileData += preferredNeighbors.get(i)[0] + ", ";
+                    logFileData += preferredNeighbors.get(i) + ", ";
                 }
                 logFileData += ".";
                 break;

@@ -75,6 +75,11 @@ public class Server
                             }
                             System.out.println("Handshake received from peer " + peerIDStr);
                             destPeerID = Integer.parseInt(peerIDStr);
+
+                            // Give socket to peer
+                            peer.serverSockets.put(destPeerID, connection);
+
+                            // Perform handshake
                             byte[] handshakeMessage = Messages.getHandshakeMessage(peer.peerID);
                             sendMessage(handshakeMessage, out);
                             completedHandshake = true;
@@ -99,8 +104,12 @@ public class Server
                         // make sure handshake completes
                         continue;
                     }
-
                     // Handshake over, process messages based on length and type
+
+                    // Add new choked peer
+                    peer.chokePeer(destPeerID);
+                    // set neighbors
+                    peer.setInitialNeighbors();
 
                     // Message format for all other messages
                     byte[] lengthBuffer = new byte[4];
