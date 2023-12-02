@@ -70,7 +70,10 @@ public class Client extends Thread
                                 for (int i = 0; i < 4; i++) {
                                     peerIDStr += (char) buffer[28 + i];
                                 }
+
                                 System.out.println("Handshake completed with " + peerIDStr);
+                                peer.logger.writeLogMessage(0, peer.peerID, destPeerID, 0, 0);
+
                                 if (peer.hasFile) {
                                     int numOfPieces = peer.fileSize / peer.pieceSize + 1;
 
@@ -142,6 +145,9 @@ public class Client extends Thread
                             // Switch bool to true for interested peer
                             System.out.println("Set interest for " + destPeerID);
                             peer.setInterestPeer(destPeerID);
+
+                            peer.logger.writeLogMessage(7, peer.peerID, destPeerID, 0, 0);
+
                         }
                         // Uninterested Message Received
                         if (type == 3)
@@ -149,10 +155,14 @@ public class Client extends Thread
                             // not sure if this is redundant but
                             System.out.println("Set uninterest for " + destPeerID);
                             peer.unSetInterestPeer(destPeerID);
+
+                            peer.logger.writeLogMessage(8, peer.peerID, destPeerID, 0, 0);
+
                         }
                         // Unchoked message received
                         if (type == 1)
                         {
+                            System.out.println("Set unchoked for " + destPeerID);
                             // Determine what other peer has that it doesn't
                             byte[] localBitfield = peer.bitfield;
                             byte[] peerBitfield = peer.hasPiecesPeers.get(destPeerID);
@@ -181,13 +191,17 @@ public class Client extends Thread
                             buffer.putInt(randomPieceIndex);
                             byte[] indexField = buffer.array();
 
+                            // send unchoke log
+                            peer.logger.writeLogMessage(4, peer.peerID, destPeerID, 0, 0);
+
                             // send request message
                             byte[] requestMessage = Messages.getRequestMessage(indexField);
                             sendMessage(requestMessage, out);
                         }
                         if (type == 0)
                         {
-                            // Genuinely might only need to log this
+                            peer.logger.writeLogMessage(5, peer.peerID, destPeerID, 0, 0);
+                            System.out.println("Choked " + destPeerID);
                         }
                         if (type == 6)
                         {
