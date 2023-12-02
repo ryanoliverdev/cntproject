@@ -19,8 +19,6 @@ public class Server
             try {
                 while(true) {
                     new Handler(listener.accept(), clientNum, peer).start();
-                    System.out.println("Client " + clientNum + " is connected!");
-                    clientNum++;
                 }
             } finally {
                 listener.close();
@@ -76,7 +74,10 @@ public class Server
                                 peerIDStr += (char) buffer[28 + i];
                             }
                             System.out.println("Handshake received from peer " + peerIDStr);
+
+                            // Writing the connection method to the log file
                             destPeerID = Integer.parseInt(peerIDStr);
+                            peer.logger.writeLogMessage(0, peer.peerID, destPeerID, 0, 0);
 
                             // Perform handshake
                             byte[] handshakeMessage = Messages.getHandshakeMessage(peer.peerID);
@@ -161,6 +162,9 @@ public class Server
                         // Switch bool to true for interested peer
                         System.out.println("Set interest for " + destPeerID);
                         peer.setInterestPeer(destPeerID);
+
+                        peer.logger.writeLogMessage(7, peer.peerID, destPeerID, 0, 0);
+
                     }
                     // Uninterested Message Received
                     if (type == 3)
@@ -168,10 +172,14 @@ public class Server
                         // not sure if this is redundant but
                         System.out.println("Set uninterest for " + destPeerID);
                         peer.unSetInterestPeer(destPeerID);
+
+                        peer.logger.writeLogMessage(8, peer.peerID, destPeerID, 0, 0);
                     }
                     // Unchoked message received
                     if (type == 1)
                     {
+
+                        System.out.println("Unchoked by " + destPeerID);
                         // Determine what other peer has that it doesn't
                         byte[] localBitfield = peer.bitfield;
                         byte[] peerBitfield = peer.hasPiecesPeers.get(destPeerID);
@@ -200,6 +208,9 @@ public class Server
                         buffer.putInt(randomPieceIndex);
                         byte[] indexField = buffer.array();
 
+                        // send unchoke log
+                        peer.logger.writeLogMessage(4, peer.peerID, destPeerID, 0, 0);
+
                         // send request message
                         byte[] requestMessage = Messages.getRequestMessage(indexField);
                         sendMessage(requestMessage, out);
@@ -207,6 +218,10 @@ public class Server
                     if (type == 0)
                     {
                         // Genuinely might only need to log this
+                        // This sends out the choked log
+                        peer.logger.writeLogMessage(5, peer.peerID, destPeerID, 0, 0);
+                        System.out.println("Choked " + destPeerID);
+
                     }
                     if (type == 6)
                     {

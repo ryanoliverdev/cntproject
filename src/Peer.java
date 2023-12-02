@@ -60,6 +60,7 @@ public class Peer
     {
         this.bitfield = bf;
     }
+    FileLogger logger;
 
     public Peer(int id, LinkedHashMap<String, String> commonInfo, LinkedHashMap<Integer, String[]> peerInfo)
     {
@@ -76,6 +77,8 @@ public class Peer
         portNumber = Integer.parseInt(peerInfo.get(id)[1]);
         hasFile = Integer.parseInt(peerInfo.get(id)[2]) == 1;
         pInfo = peerInfo;
+        logger = new FileLogger(peerID);
+        logger.loggingStart();
 
 
     }
@@ -170,6 +173,13 @@ public class Peer
                possibleOptimisticNeighbors.add(peerID);
            }
        }
+
+       if(possibleOptimisticNeighbors.size() == 0)
+       {
+           optimisticallyUnChokedNeighbor = -1;
+           return;
+       }
+
        Random rand = new Random();
        int randomIndex = rand.nextInt(possibleOptimisticNeighbors.size());
        optimisticallyUnChokedNeighbor = possibleOptimisticNeighbors.get(randomIndex);
@@ -187,142 +197,47 @@ public class Peer
             // choke peer type
             case 0:
                 chokePeer(srcPeerID);
-                writeLogMessage(type, peerID, srcPeerID, 0, 0);
+                logger.writeLogMessage(type, peerID, srcPeerID, 0, 0);
                 break;
             // unchoke message type
             case 1:
                 unChokePeer(srcPeerID);
-                writeLogMessage(type, peerID, srcPeerID, 0, 0);
+                logger.writeLogMessage(type, peerID, srcPeerID, 0, 0);
                 break;
             // setInterest message type
             case 2:
                 setInterestPeer(srcPeerID);
-                writeLogMessage(type, peerID, srcPeerID, 0, 0);
+                logger.writeLogMessage(type, peerID, srcPeerID, 0, 0);
                 break;
             // unsetInterest message type
             case 3:
                 unSetInterestPeer(srcPeerID);
-                writeLogMessage(type, peerID, srcPeerID, 0, 0);
+                logger.writeLogMessage(type, peerID, srcPeerID, 0, 0);
                 break;
             // hasFile message type
             case 4:
                 setPeerPiecesBitfield(srcPeerID, message);
-                writeLogMessage(type, peerID, srcPeerID, 0, 0);
+                logger.writeLogMessage(type, peerID, srcPeerID, 0, 0);
                 break;
             // bitfield message type
             case 5:
                 sendBitfield(srcPeerID);
-                writeLogMessage(type, peerID, srcPeerID, 0, 0);
+                logger.writeLogMessage(type, peerID, srcPeerID, 0, 0);
                 break;
             // request message type
             case 6:
                 requestPieces(srcPeerID);
-                writeLogMessage(type, peerID, srcPeerID, 0, 0);
+                logger.writeLogMessage(type, peerID, srcPeerID, 0, 0);
                 break;
             // pieces message type
             case 7:
                 sendPieces(srcPeerID);
-                writeLogMessage(type, peerID, srcPeerID, 0, 0);
+                logger.writeLogMessage(type, peerID, srcPeerID, 0, 0);
                 break;
         }
     }
 
     // Still needs more implementation
-    public void writeLogMessage(int typeOfMessage, int peerID, int peerID2, int pieceIndex, int totalPieces)
-    {
-        String filePath = "/log_peer_" + peerID + ".log";
-
-        // Creating a FileWriter and BufferedWriter to create and write to the log file
-        FileWriter fw = null;
-        BufferedWriter bw = null;
-        File logFile = new File(filePath);
-
-        try
-        {
-            fw = new FileWriter(logFile.getName(), true);
-            bw = new BufferedWriter(fw);
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeException(e);
-        }
-
-        String logFileData = "";
-        LocalDateTime currentTime = LocalDateTime.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-        String formattedDateTime = currentTime.format(formatter);
-
-        switch(typeOfMessage) 
-        {
-            case 0:
-                // Peer 1 connects to Peer 2
-                logFileData = formattedDateTime + ": Peer " + peerID + " makes a connection to Peer " + peerID2 + ".";
-                break;
-            case 1:
-                // Confirms connection from Peer 2 to Peer 1
-                logFileData = formattedDateTime + ": Peer " + peerID + " is connected from Peer " + peerID2 + ".";
-                break;
-            case 2:
-                // Case for if Peer 1 changes its preferred neighbors
-                logFileData = formattedDateTime + ": Peer " + peerID + " has the preferred neighbors ";
-                // getting the preferred neighbors from the arraylist
-                for (int i = 0; i < preferredNeighbors.size(); i++) {
-                    logFileData += preferredNeighbors.get(i) + ", ";
-                }
-                logFileData += ".";
-                break;
-            case 3:
-                // If Peer 1 optimistically unchokes a neighbor
-                logFileData = formattedDateTime + ": Peer " + peerID + " has the optimistically unchoked neighbor " + peerID2 + ".";
-                break;
-            case 4:
-                // If peer 1 is unchoked by peer 2
-                logFileData = formattedDateTime + ": Peer " + peerID + " is unchoked by " + peerID2 + ".";
-                break;
-            case 5:
-                // If peer 1 is choked by peer 2
-                logFileData = formattedDateTime + ": Peer " + peerID + " is choked by " + peerID2 + ".";
-                break;
-            case 6:
-                // If peer 1 receives a have message from peer 2
-                logFileData = formattedDateTime + ": Peer " + peerID + " received the ‘have’ message from " + peerID2 + " for the piece" + pieceIndex + ".";
-                break;
-            case 7:
-                // If peer 1 receives an interested message from peer 2
-                logFileData = formattedDateTime + ": Peer " + peerID + "  received the ‘interested’ message from " + peerID2 + ".";
-                break;
-            case 8:
-                // If peer 1 receives a not interested message from peer 2
-                logFileData = formattedDateTime + ": Peer " + peerID + " received the ‘not interested’ message from " + peerID2 + ".";
-                break;
-            case 9:
-                // If peer 1 receives a piece message from peer 2 adds that the download finishes and was successful
-                logFileData = formattedDateTime + ": Peer " + peerID + " has downloaded the piece " + pieceIndex + " from " + peerID2 + "." + " Now the number of pieces it has is " + totalPieces + ".";
-                totalPieces++;
-                break;
-            case 10:
-                // If peer 1 finishes downloading the file
-                logFileData = formattedDateTime + ": Peer " + peerID + " has downloaded the complete file.";
-                break;
-            default:
-                // If there is some error message
-                System.out.println("Error: Type of message not recognized.");
-                break;
-        }
-
-        // Cleaning up and writing to the log file
-        try
-        {
-            bw.write(logFileData);
-            bw.close();
-            fw.close();
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeException(e);
-        }
-
-    }
 
 
 }

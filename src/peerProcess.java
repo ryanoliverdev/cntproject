@@ -1,8 +1,8 @@
 import java.util.LinkedHashMap;
 
 public class peerProcess {
-    static String commonPath = "./Common.cfg";
-    static String peerInfoPath = "./PeerInfo.cfg";
+    static String commonPath = "./project_config_file_large/Common.cfg";
+    static String peerInfoPath = "./project_config_file_large/PeerInfo.cfg";
     public static void main(String[] args){
         LinkedHashMap<String, String> commonInfo = ReadFile.readCommonInfo(commonPath);
         LinkedHashMap<Integer, String[]> peerInfo = ReadFile.readPeerInfo(peerInfoPath);
