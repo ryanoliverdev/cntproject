@@ -10,7 +10,9 @@ public class peerProcess {
         int peerID = Integer.parseInt(args[0]);
         Peer peer = new Peer(peerID, commonInfo, peerInfo);
 
-
+        // For choking and optimistic choking interval
+        PeerThread pThread = new PeerThread(peer);
+        pThread.start();
         // Initializing client
         Client client = new Client(peer, peerInfo);
         client.start();
