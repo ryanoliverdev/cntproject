@@ -26,8 +26,7 @@ public class Peer
     HashMap<Integer, Boolean> hasFilePeers = new HashMap<>();
     HashMap<Integer, byte[]> hasPiecesPeers = new HashMap<>();
     HashMap<Integer, Double> neighbors = new HashMap<>();
-
-    HashMap<Integer, Socket> serverSockets = new HashMap<>();
+    LinkedHashMap<Integer, String[]> pInfo;
     // Stores neighbors and download rate (as a double)
 
     // PeerID's of preferredNeighbors along with download rates (maybe can get rid of these after sorting)
@@ -76,6 +75,7 @@ public class Peer
         hostName = peerInfo.get(id)[0];
         portNumber = Integer.parseInt(peerInfo.get(id)[1]);
         hasFile = Integer.parseInt(peerInfo.get(id)[2]) == 1;
+        pInfo = peerInfo;
 
 
     }

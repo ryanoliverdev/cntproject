@@ -2,7 +2,9 @@ import java.net.*;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Random;
 
 public class Server 
 {
@@ -76,9 +78,6 @@ public class Server
                             System.out.println("Handshake received from peer " + peerIDStr);
                             destPeerID = Integer.parseInt(peerIDStr);
 
-                            // Give socket to peer
-                            peer.serverSockets.put(destPeerID, connection);
-
                             // Perform handshake
                             byte[] handshakeMessage = Messages.getHandshakeMessage(peer.peerID);
                             sendMessage(handshakeMessage, out);
@@ -106,8 +105,11 @@ public class Server
                     }
                     // Handshake over, process messages based on length and type
 
+                    // Set default conditions
                     // Add new choked peer
                     peer.chokePeer(destPeerID);
+                    // Add new uninterested peer
+                    peer.setInterestPeer(destPeerID);
                     // set neighbors
                     peer.setInitialNeighbors();
 
@@ -167,7 +169,49 @@ public class Server
                         System.out.println("Set uninterest for " + destPeerID);
                         peer.unSetInterestPeer(destPeerID);
                     }
+                    // Unchoked message received
+                    if (type == 1)
+                    {
+                        // Determine what other peer has that it doesn't
+                        byte[] localBitfield = peer.bitfield;
+                        byte[] peerBitfield = peer.hasPiecesPeers.get(destPeerID);
 
+                        int maxInd = Math.min(localBitfield.length, peerBitfield.length);
+                        ArrayList<Integer> pieceIndices = new ArrayList<>();
+                        for (int i = 0; i < maxInd; i++)
+                        {
+                            if (localBitfield[i] != peerBitfield[i])
+                                pieceIndices.add(i);
+                        }
+                        if (peerBitfield.length > localBitfield.length)
+                        {
+                            int difference = peerBitfield.length - localBitfield.length;
+                            for (int i = localBitfield.length; i < difference; i++)
+                            {
+                                pieceIndices.add(i);
+                            }
+                        }
+
+                        Random rand = new Random();
+                        int randomIndex = rand.nextInt(pieceIndices.size());
+                        int randomPieceIndex = pieceIndices.get(randomIndex);
+
+                        ByteBuffer buffer = ByteBuffer.allocate(4);
+                        buffer.putInt(randomPieceIndex);
+                        byte[] indexField = buffer.array();
+
+                        // send request message
+                        byte[] requestMessage = Messages.getRequestMessage(indexField);
+                        sendMessage(requestMessage, out);
+                    }
+                    if (type == 0)
+                    {
+                        // Genuinely might only need to log this
+                    }
+                    if (type == 6)
+                    {
+
+                    }
                 }
             }
             catch(IOException ioException){
