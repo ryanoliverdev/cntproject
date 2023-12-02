@@ -2,9 +2,7 @@ import java.net.*;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
 public class Client extends Thread
 { //client part of the peer: reads data from port ****
@@ -89,6 +87,8 @@ public class Client extends Thread
                         }
                         // Add new choked peer
                         peer.chokePeer(destPeerID);
+                        // Add new uninterested peer
+                        peer.setInterestPeer(destPeerID);
                         // set neighbors
                         peer.setInitialNeighbors();
                         // Message format for all other messages
@@ -150,9 +150,49 @@ public class Client extends Thread
                             System.out.println("Set uninterest for " + destPeerID);
                             peer.unSetInterestPeer(destPeerID);
                         }
+                        // Unchoked message received
+                        if (type == 1)
+                        {
+                            // Determine what other peer has that it doesn't
+                            byte[] localBitfield = peer.bitfield;
+                            byte[] peerBitfield = peer.hasPiecesPeers.get(destPeerID);
 
+                            int maxInd = Math.min(localBitfield.length, peerBitfield.length);
+                            ArrayList<Integer> pieceIndices = new ArrayList<>();
+                            for (int i = 0; i < maxInd; i++)
+                            {
+                                if (localBitfield[i] != peerBitfield[i])
+                                    pieceIndices.add(i);
+                            }
+                            if (peerBitfield.length > localBitfield.length)
+                            {
+                                int difference = peerBitfield.length - localBitfield.length;
+                                for (int i = localBitfield.length; i < difference; i++)
+                                {
+                                    pieceIndices.add(i);
+                                }
+                            }
 
-                        // Process Interested
+                            Random rand = new Random();
+                            int randomIndex = rand.nextInt(pieceIndices.size());
+                            int randomPieceIndex = pieceIndices.get(randomIndex);
+
+                            ByteBuffer buffer = ByteBuffer.allocate(4);
+                            buffer.putInt(randomPieceIndex);
+                            byte[] indexField = buffer.array();
+
+                            // send request message
+                            byte[] requestMessage = Messages.getRequestMessage(indexField);
+                            sendMessage(requestMessage, out);
+                        }
+                        if (type == 0)
+                        {
+                            // Genuinely might only need to log this
+                        }
+                        if (type == 6)
+                        {
+
+                        }
 
 
                     }
