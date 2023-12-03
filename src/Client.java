@@ -223,41 +223,54 @@ public class Client extends Thread
                             byte[] pieceContent = peer.fileData.getData(indexField, filePath);
                             byte[] piecesMessage = Messages.getPiecesMessage(indexField, pieceContent);
                             sendMessage(piecesMessage, out);
+                            peer.piecesSent.put(destPeerID, peer.piecesSent.get(destPeerID) + 1);
+
 
                         }
                         if (type == 7)
                         {
                             // Take in data
                             // Create a new array for the index field and copy the first 4 bytes of messageBuffer
-                            // flush if choked
+                            // Stop if choked
                             if (peer.isChokedPeer.get(destPeerID)){
                                 out.flush();
                             }
                             System.out.println("Received Piece Message");
-
                             byte[] indexField = new byte[4];
                             System.arraycopy(messageBuffer, 0, indexField, 0, 4);
-                            // Send to all peers
 
                             // Create a new array for the piece content and copy the rest of messageBuffer
                             byte[] pieceContent = new byte[messageBuffer.length - 4];
                             System.arraycopy(messageBuffer, 4, pieceContent, 0, messageBuffer.length - 4);
-
                             // Download piece
                             peer.fileData.setData(indexField,pieceContent, peer.peerID);
                             int index = ByteBuffer.wrap(indexField).getInt();
                             int indexInt = index / 8;
                             int indexRem = index % 8;
-                            // Received piece, set bitfield accordingly
-                            peer.bitfield[indexInt] = (byte) (peer.bitfield[indexInt] | (1 << indexRem));
                             peer.numOfPiecesHave++;
                             peer.logger.writeLogMessage(9, peer.peerID, destPeerID, index, peer.numOfPiecesHave);
 
+                            // Received piece, set bitfield accordingly
+                            peer.bitfield[indexInt] = (byte) (peer.bitfield[indexInt] | (1 << indexRem));
+                            System.arraycopy(messageBuffer, 0, indexField, 0, 4);
+                            for (Map.Entry<Integer, Socket> ent : peer.connections.entrySet())
+                            {
+                                Socket requestSocket = ent.getValue();
+                                Integer peerID = ent.getKey();
+                                Object lock = peer.connectionLocks.get(peerID);
+                                synchronized (lock) {
+                                    DataOutputStream outS = new DataOutputStream(requestSocket.getOutputStream());
+                                    outS.flush();
+                                    byte[] hasMessage = Messages.getHasFileMessage(indexField);
+                                    sendMessage(hasMessage, outS);
+                                }
+                            }
+                            
                             System.out.println(peer.numOfPiecesHave);
                             System.out.println(peer.numOfPieces);
                             if (peer.numOfPiecesHave < peer.numOfPieces)
                             {
-                                System.out.println(peer.numOfPiecesHave);
+
                                 // Generate another random piece
                                 byte[] localBitfield = peer.bitfield;
                                 byte[] peerBitfield = peer.hasPiecesPeers.get(destPeerID);
@@ -288,11 +301,26 @@ public class Client extends Thread
                                 byte[] requestMessage = Messages.getRequestMessage(nextIndexField);
                                 sendMessage(requestMessage, out);
                             }
+                            peer.hasFile = true;
+                            peer.logger.writeLogMessage(10, 0, 0, 0, 0);
                         }
-                        if (type == 4){
+                        if (type == 4)
+                        {
                             byte[] indexField = new byte[4];
-                            System.arraycopy(messageBuffer, 0, indexField, 0, 4);
-
+                            int index = ByteBuffer.wrap(indexField).getInt();
+                            int indexInt = index / 8;
+                            int indexRem = index % 8;
+                            peer.bitfield[indexInt] = (byte) (peer.bitfield[indexInt] | (1 << indexRem));
+                            peer.logger.writeLogMessage(6, peer.peerID, destPeerID, index, 0);
+                        }
+                        Boolean p2pFinished = true;
+                        for (int i = 0; i < peer.hasFilePeers.size(); i++)
+                        {
+                            p2pFinished = p2pFinished && peer.hasFilePeers.get(i);
+                        }
+                        if (p2pFinished && peer.hasFile)
+                        {
+                            // can terminate, all peers have file
                         }
                     }
                 } catch (IOException e) {

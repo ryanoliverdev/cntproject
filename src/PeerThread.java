@@ -4,7 +4,9 @@ import java.io.IOException;
 import java.net.ConnectException;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Map;
 
 public class PeerThread extends Thread{
 
@@ -20,6 +22,11 @@ public class PeerThread extends Thread{
         int optimisticUnchokingInterval = peer.optimisticUnchokingInterval * 1000;
         int k = peer.kNeighbors;
         while (true) {
+            for (Map.Entry<Integer,Integer> entry : peer.piecesSent.entrySet())
+            {
+                int key = entry.getKey();
+                int value = entry.getValue();
+            }
             if (unchokingInterval < optimisticUnchokingInterval) {
                 // Determine preferred neighbors
                 try {
@@ -40,6 +47,7 @@ public class PeerThread extends Thread{
                     if (toBeUnChoked.size() == 0 && toBeChoked.size() == 0){
                         continue;
                     }
+                    peer.logger.writeLogMessage(2, peer.peerID, 0, 0, 0, newPref);
                     // Send chokes
                     for (int i = 0; i < toBeChoked.size(); i++)
                     {
@@ -53,6 +61,7 @@ public class PeerThread extends Thread{
                             sendMessage(chokedMessage, out, destPeerID);
                         }
                     }
+
                     // Send unchokes
                     for (int i = 0; i < toBeUnChoked.size(); i++)
                     {
@@ -90,6 +99,7 @@ public class PeerThread extends Thread{
                             sendMessage(unChokedMessage, out, destPeerID);
                         }
                     }
+                    peer.logger.writeLogMessage(3, peer.peerID, destPeerID, 0, 0);
                     // Re choke if it is not in the preferred neighbors list. Otherwise, it should remain unchoked.
                     if (!peer.preferredNeighbors.contains(destPeerID)) {
                         // not the best solution but it works
@@ -128,6 +138,7 @@ public class PeerThread extends Thread{
                         }
 
                     }
+                    peer.logger.writeLogMessage(3, peer.peerID, destPeerID, 0, 0);
                     // Re choke if it is not in the preferred neighbors list. Otherwise, it should remain unchoked.
                     if (!peer.preferredNeighbors.contains(destPeerID)){
                         // not the best solution but it works
@@ -162,6 +173,7 @@ public class PeerThread extends Thread{
                     if (toBeUnChoked.size() == 0 && toBeChoked.size() == 0){
                         continue;
                     }
+                    peer.logger.writeLogMessage(2, peer.peerID, 0, 0, 0, newPref);
                     // Send chokes
                     for (int i = 0; i < toBeChoked.size(); i++)
                     {

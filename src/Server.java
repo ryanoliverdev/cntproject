@@ -2,10 +2,7 @@ import java.net.*;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.BitSet;
-import java.util.Random;
+import java.util.*;
 
 public class Server 
 {
@@ -83,9 +80,11 @@ public class Server
                             final Object lock = new Object();
                             peer.connections.put(destPeerID, connection);
                             peer.connectionLocks.put(destPeerID, lock);
+
                             // Set default values
                             peer.unSetInterestPeer(destPeerID);
                             peer.chokePeer(destPeerID);
+                            peer.piecesSent.put(destPeerID, 0);
                             // Perform handshake
                             byte[] handshakeMessage = Messages.getHandshakeMessage(peer.peerID);
                             sendMessage(handshakeMessage, out);
@@ -241,6 +240,7 @@ public class Server
                         byte[] pieceContent = peer.fileData.getData(indexField, filePath);
                         byte[] piecesMessage = Messages.getPiecesMessage(indexField, pieceContent);
                         sendMessage(piecesMessage, out);
+                        peer.piecesSent.put(destPeerID, peer.piecesSent.get(destPeerID) + 1);
 
                     }
                     // Receive piece
@@ -264,8 +264,24 @@ public class Server
                         int index = ByteBuffer.wrap(indexField).getInt();
                         int indexInt = index / 8;
                         int indexRem = index % 8;
+                        peer.numOfPiecesHave++;
+                        peer.logger.writeLogMessage(9, peer.peerID, destPeerID, index, peer.numOfPiecesHave);
+
                         // Received piece, set bitfield accordingly
                         peer.bitfield[indexInt] = (byte) (peer.bitfield[indexInt] | (1 << indexRem));
+                        System.arraycopy(messageBuffer, 0, indexField, 0, 4);
+                        for (Map.Entry<Integer, Socket> entry : peer.connections.entrySet())
+                        {
+                            Socket requestSocket = entry.getValue();
+                            Integer peerID = entry.getKey();
+                            Object lock = peer.connectionLocks.get(peerID);
+                            synchronized (lock) {
+                                DataOutputStream out = new DataOutputStream(requestSocket.getOutputStream());
+                                out.flush();
+                                byte[] hasMessage = Messages.getHasFileMessage(indexField);
+                                sendMessage(hasMessage, out);
+                            }
+                        }
                         System.out.println(peer.numOfPiecesHave);
                         System.out.println(peer.numOfPieces);
                         if (peer.numOfPiecesHave < peer.numOfPieces)
@@ -301,12 +317,26 @@ public class Server
                             byte[] requestMessage = Messages.getRequestMessage(nextIndexField);
                             sendMessage(requestMessage, out);
                         }
+                        peer.hasFile = true;
+                        peer.logger.writeLogMessage(10, 0, 0, 0, 0);
                     }
                     if (type == 4)
                     {
                         byte[] indexField = new byte[4];
-                        System.arraycopy(messageBuffer, 0, indexField, 0, 4);
-
+                        int index = ByteBuffer.wrap(indexField).getInt();
+                        int indexInt = index / 8;
+                        int indexRem = index % 8;
+                        peer.bitfield[indexInt] = (byte) (peer.bitfield[indexInt] | (1 << indexRem));
+                        peer.logger.writeLogMessage(6, peer.peerID, destPeerID, index, 0);
+                    }
+                    Boolean p2pFinished = true;
+                    for (int i = 0; i < peer.hasFilePeers.size(); i++)
+                    {
+                        p2pFinished = p2pFinished && peer.hasFilePeers.get(i);
+                    }
+                    if (p2pFinished && peer.hasFile)
+                    {
+                        // can terminate, all peers have file
                     }
                 }
             }
