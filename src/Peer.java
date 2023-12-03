@@ -55,7 +55,7 @@ public class Peer
     }
     public void setPeerPiecesBitfield(int srcPeerID, byte[] bitfield)
     {
-        hasPiecesPeers.put(srcPeerID, bitfield);
+        hasPiecesPeers.putIfAbsent(srcPeerID, bitfield);
     }
     public void setHasFile(int srcPeerID)
     {

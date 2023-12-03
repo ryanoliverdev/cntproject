@@ -75,12 +75,11 @@ public class PeerThread extends Thread{
                         continue;
                     else
                     {
-                        Socket requestSocket = peer.connections.get(oldDestPeerID);
+                        Socket requestSocket = peer.connections.get(destPeerID);
                         DataOutputStream out = new DataOutputStream(requestSocket.getOutputStream());
                         out.flush();
                         byte[] unChokedMessage = Messages.getUnChokeMessage();
-                        sendMessage(unChokedMessage, out, oldDestPeerID);
-
+                        sendMessage(unChokedMessage, out, destPeerID);
                     }
                     // Re choke if it is not in the preferred neighbors list. Otherwise, it should remain unchoked.
                     if (!peer.preferredNeighbors.contains(destPeerID)) {
@@ -107,11 +106,11 @@ public class PeerThread extends Thread{
                         continue;
                     else
                     {
-                        Socket requestSocket = peer.connections.get(oldDestPeerID);
+                        Socket requestSocket = peer.connections.get(destPeerID);
                         DataOutputStream out = new DataOutputStream(requestSocket.getOutputStream());
                         out.flush();
                         byte[] unChokedMessage = Messages.getUnChokeMessage();
-                        sendMessage(unChokedMessage, out, oldDestPeerID);
+                        sendMessage(unChokedMessage, out, destPeerID);
 
                     }
                     // Re choke if it is not in the preferred neighbors list. Otherwise, it should remain unchoked.

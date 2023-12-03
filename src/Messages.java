@@ -169,7 +169,7 @@ public class Messages {
         byte[] sendPiecesMessage = new byte[9 + pieceContent.length];
 
         // Calculate the message length (1 byte for the type)
-        int messageLength = 1 + pieceContent.length;
+        int messageLength = 5 + pieceContent.length;
         ByteBuffer buffer = ByteBuffer.allocate(4);
         buffer.putInt(messageLength);
         System.arraycopy(buffer.array(), 0, sendPiecesMessage, 0, 4);

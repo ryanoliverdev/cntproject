@@ -72,7 +72,6 @@ public class FileData {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        System.out.println("Returning piece data");
         return pieceData;
     }
 }

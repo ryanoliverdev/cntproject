@@ -237,6 +237,7 @@ public class Client extends Thread
 
                             byte[] indexField = new byte[4];
                             System.arraycopy(messageBuffer, 0, indexField, 0, 4);
+                            // Send to all peers
 
                             // Create a new array for the piece content and copy the rest of messageBuffer
                             byte[] pieceContent = new byte[messageBuffer.length - 4];
@@ -245,13 +246,18 @@ public class Client extends Thread
                             // Download piece
                             peer.fileData.setData(indexField,pieceContent, peer.peerID);
                             int index = ByteBuffer.wrap(indexField).getInt();
+                            int indexInt = index / 8;
+                            int indexRem = index % 8;
+                            // Received piece, set bitfield accordingly
+                            peer.bitfield[indexInt] = (byte) (peer.bitfield[indexInt] | (1 << indexRem));
                             peer.numOfPiecesHave++;
                             peer.logger.writeLogMessage(9, peer.peerID, destPeerID, index, peer.numOfPiecesHave);
 
-                            // Received piece, set bitfield accordingly
-                            peer.bitfield[index] = 1;
+                            System.out.println(peer.numOfPiecesHave);
+                            System.out.println(peer.numOfPieces);
                             if (peer.numOfPiecesHave < peer.numOfPieces)
                             {
+                                System.out.println(peer.numOfPiecesHave);
                                 // Generate another random piece
                                 byte[] localBitfield = peer.bitfield;
                                 byte[] peerBitfield = peer.hasPiecesPeers.get(destPeerID);
@@ -272,7 +278,7 @@ public class Client extends Thread
 
                                 Random rand = new Random();
                                 int randomIndex = rand.nextInt(pieceIndices.size());
-                                int randomPieceIndex = pieceIndices.get(randomIndex / 8);
+                                int randomPieceIndex = pieceIndices.get(randomIndex);
 
                                 ByteBuffer buffer = ByteBuffer.allocate(4);
                                 buffer.putInt(randomPieceIndex);
@@ -282,6 +288,11 @@ public class Client extends Thread
                                 byte[] requestMessage = Messages.getRequestMessage(nextIndexField);
                                 sendMessage(requestMessage, out);
                             }
+                        }
+                        if (type == 4){
+                            byte[] indexField = new byte[4];
+                            System.arraycopy(messageBuffer, 0, indexField, 0, 4);
+
                         }
                     }
                 } catch (IOException e) {

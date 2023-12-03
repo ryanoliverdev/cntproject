@@ -43,6 +43,8 @@ public class Server
         private int no;		//The index number of the client
 
         private Peer peer;
+
+        private int destPeerID = -1;
         private boolean completedHandshake = false;
 
         public Handler(Socket connection, int no, Peer p)
@@ -60,7 +62,6 @@ public class Server
                 out = new DataOutputStream(connection.getOutputStream());
                 out.flush();
                 in = new DataInputStream(connection.getInputStream());
-                int destPeerID = -1;
                 while(true)
                 {
                     // Handshake server send and send initial bitfield
@@ -79,11 +80,12 @@ public class Server
                             // Writing the connection method to the log file
                             destPeerID = Integer.parseInt(peerIDStr);
                             peer.logger.writeLogMessage(0, peer.peerID, destPeerID, 0, 0);
+                            final Object lock = new Object();
                             peer.connections.put(destPeerID, connection);
+                            peer.connectionLocks.put(destPeerID, lock);
                             // Set default values
                             peer.unSetInterestPeer(destPeerID);
                             peer.chokePeer(destPeerID);
-                            peer.setInitialNeighbors();
                             // Perform handshake
                             byte[] handshakeMessage = Messages.getHandshakeMessage(peer.peerID);
                             sendMessage(handshakeMessage, out);
@@ -92,15 +94,15 @@ public class Server
                             // Send Bitfield
                             // TO DO: I know I redid this, you can simplify it if you'd like
                             if (peer.hasFile) {
-                                int numOfPieces = peer.fileSize / peer.pieceSize + 1;
+                                int numOfPieces = (int) Math.ceil((double) peer.fileSize / peer.pieceSize);
 
-                                buffer = new byte[5 + (numOfPieces + 7) / 8];
+                                byte[] bitfield = new byte[(numOfPieces + 7)/8];
                                 for (int i = 0; i < numOfPieces; i++) {
-                                    buffer[i / 8] |= 1 << (7 - (i % 8));
+                                    bitfield[i/8] |= 1 << (7 - (i % 8));
                                 }
-                                byte[] bitfield = Messages.getBitfieldMessage(buffer);
+                                byte[] bitfieldMsg = Messages.getBitfieldMessage(bitfield);
                                 peer.setOwnBitfield(bitfield);
-                                sendMessage(bitfield, out);
+                                sendMessage(bitfieldMsg, out);
                                 System.out.println("Bitfield sent");
                             }
                         }
@@ -111,7 +113,7 @@ public class Server
                     }
                     // Handshake over, process messages based on length and type
 
-
+                    peer.setInitialNeighbors();
                     // Message format for all other messages
                     byte[] lengthBuffer = new byte[4];
                     int length;
@@ -120,6 +122,8 @@ public class Server
                     int type;
                     byte[] messageBuffer = new byte[0];
 
+                    // Send Bitfield
+                    // TO DO: I know I redid this, you can simplify it if you'd like
 
                     // Receive Next Message
                     in.read(lengthBuffer);
@@ -131,6 +135,8 @@ public class Server
                         messageBuffer = new byte[length - 1];
                         in.read(messageBuffer);
                     }
+
+
                     // Bitfield Message Received
                     if (type == 5) {
                         System.out.println("Set bitfield for " + destPeerID);
@@ -178,25 +184,27 @@ public class Server
                     // Unchoked message received
                     if (type == 1)
                     {
-                        System.out.println("Unchoked by " + destPeerID);
+                        System.out.println("Set unchoked for " + destPeerID);
+//                        if (peer.isChokedPeer.get(destPeerID)){
+//                            continue;
+//                        }
+                        peer.unChokePeer(destPeerID);
                         // Determine what other peer has that it doesn't
                         byte[] localBitfield = peer.bitfield;
                         byte[] peerBitfield = peer.hasPiecesPeers.get(destPeerID);
 
-                        int maxInd = Math.min(localBitfield.length, peerBitfield.length);
+                        BitSet localBitSet = BitSet.valueOf(localBitfield);
+                        BitSet peerBitSet = BitSet.valueOf(peerBitfield);
+
+                        // Clone peerBitSet because andNot() modifies the BitSet in place
+                        BitSet diff = (BitSet) peerBitSet.clone();
+                        // diff now contains bits that are in peerBitSet but not in localBitSet
+                        diff.andNot(localBitSet);
+
+                        // Convert diff to list of indices
                         ArrayList<Integer> pieceIndices = new ArrayList<>();
-                        for (int i = 0; i < maxInd; i++)
-                        {
-                            if (localBitfield[i] != peerBitfield[i])
-                                pieceIndices.add(i);
-                        }
-                        if (peerBitfield.length > localBitfield.length)
-                        {
-                            int difference = peerBitfield.length - localBitfield.length;
-                            for (int i = localBitfield.length; i < difference; i++)
-                            {
-                                pieceIndices.add(i);
-                            }
+                        for (int i = diff.nextSetBit(0); i >= 0; i = diff.nextSetBit(i+1)) {
+                            pieceIndices.add(i);
                         }
 
                         Random rand = new Random();
@@ -216,8 +224,8 @@ public class Server
                     }
                     if (type == 0)
                     {
-                        // Genuinely might only need to log this
                         // This sends out the choked log
+                        peer.chokePeer(destPeerID);
                         peer.logger.writeLogMessage(5, peer.peerID, destPeerID, 0, 0);
                         System.out.println("Choked by " + destPeerID);
 
@@ -229,15 +237,21 @@ public class Server
                         byte[] indexField = new byte[4];
                         System.arraycopy(messageBuffer, 0, indexField, 0, 4);
                         // Get piece content
-                        String filePath = "./project_config_file_large/" + peer.peerID + "/tree.jpg";
+                        String filePath = "./project_config_file_large/" + peer.peerID + "/" + peer.fileName;
                         byte[] pieceContent = peer.fileData.getData(indexField, filePath);
                         byte[] piecesMessage = Messages.getPiecesMessage(indexField, pieceContent);
                         sendMessage(piecesMessage, out);
+
                     }
+                    // Receive piece
                     if (type == 7)
                     {
                         // Take in data
                         // Create a new array for the index field and copy the first 4 bytes of messageBuffer
+                        // Stop if choked
+                        if (peer.isChokedPeer.get(destPeerID)){
+                            out.flush();
+                        }
                         System.out.println("Received Piece Message");
                         byte[] indexField = new byte[4];
                         System.arraycopy(messageBuffer, 0, indexField, 0, 4);
@@ -246,13 +260,17 @@ public class Server
                         byte[] pieceContent = new byte[messageBuffer.length - 4];
                         System.arraycopy(messageBuffer, 4, pieceContent, 0, messageBuffer.length - 4);
                         // Download piece
-                        peer.fileData.setData(indexField,pieceContent);
+                        peer.fileData.setData(indexField,pieceContent, peer.peerID);
                         int index = ByteBuffer.wrap(indexField).getInt();
-
+                        int indexInt = index / 8;
+                        int indexRem = index % 8;
                         // Received piece, set bitfield accordingly
-                        peer.bitfield[index] = 1;
-                        if (true)
+                        peer.bitfield[indexInt] = (byte) (peer.bitfield[indexInt] | (1 << indexRem));
+                        System.out.println(peer.numOfPiecesHave);
+                        System.out.println(peer.numOfPieces);
+                        if (peer.numOfPiecesHave < peer.numOfPieces)
                         {
+
                             // Generate another random piece
                             byte[] localBitfield = peer.bitfield;
                             byte[] peerBitfield = peer.hasPiecesPeers.get(destPeerID);
@@ -284,6 +302,12 @@ public class Server
                             sendMessage(requestMessage, out);
                         }
                     }
+                    if (type == 4)
+                    {
+                        byte[] indexField = new byte[4];
+                        System.arraycopy(messageBuffer, 0, indexField, 0, 4);
+
+                    }
                 }
             }
             catch(IOException ioException){
@@ -307,12 +331,17 @@ public class Server
 
         //send a message to the output stream
         public void sendMessage(byte[] msg, DataOutputStream out) {
+            Object lock = peer.connectionLocks.get(destPeerID);
+
             try {
-                out.write(msg);
-                out.flush();
+                synchronized (lock) {
+                    out.write(msg);
+                    out.flush();
+                }
             } catch (IOException ioException) {
                 ioException.printStackTrace();
             }
+
         }
     }
 
