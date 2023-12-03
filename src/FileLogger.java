@@ -12,7 +12,7 @@ public class FileLogger {
 
     public FileLogger(int peerID) {
         this.peerID = peerID;
-        this.logFilePath = "/log_peer_" + peerID + ".log";
+        this.logFilePath = "./log_peer_" + peerID + ".log";
     }
 
     public void loggingStart() {
