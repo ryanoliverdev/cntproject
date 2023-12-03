@@ -44,11 +44,14 @@ public class PeerThread extends Thread{
                     for (int i = 0; i < toBeChoked.size(); i++)
                     {
                         int destPeerID = toBeChoked.get(i);
+                        Object lock = peer.connectionLocks.get(destPeerID);
                         Socket requestSocket = peer.connections.get(destPeerID);
-                        DataOutputStream out = new DataOutputStream(requestSocket.getOutputStream());
-                        out.flush();
-                        byte[] chokedMessage = Messages.getChokeMessage();
-                        sendMessage(chokedMessage, out, destPeerID);
+                        synchronized (lock) {
+                            DataOutputStream out = new DataOutputStream(requestSocket.getOutputStream());
+                            out.flush();
+                            byte[] chokedMessage = Messages.getChokeMessage();
+                            sendMessage(chokedMessage, out, destPeerID);
+                        }
                     }
                     // Send unchokes
                     for (int i = 0; i < toBeUnChoked.size(); i++)
@@ -56,10 +59,13 @@ public class PeerThread extends Thread{
                         // not the best solution but it works
                         int destPeerID = toBeUnChoked.get(i);
                         Socket requestSocket = peer.connections.get(destPeerID);
-                        DataOutputStream out = new DataOutputStream(requestSocket.getOutputStream());
-                        out.flush();
-                        byte[] unChokedMessage = Messages.getUnChokeMessage();
-                        sendMessage(unChokedMessage, out, destPeerID);
+                        Object lock = peer.connectionLocks.get(destPeerID);
+                        synchronized (lock) {
+                            DataOutputStream out = new DataOutputStream(requestSocket.getOutputStream());
+                            out.flush();
+                            byte[] unChokedMessage = Messages.getUnChokeMessage();
+                            sendMessage(unChokedMessage, out, destPeerID);
+                        }
                     }
 
                 } catch (InterruptedException | IOException e) {
@@ -76,19 +82,25 @@ public class PeerThread extends Thread{
                     else
                     {
                         Socket requestSocket = peer.connections.get(destPeerID);
-                        DataOutputStream out = new DataOutputStream(requestSocket.getOutputStream());
-                        out.flush();
-                        byte[] unChokedMessage = Messages.getUnChokeMessage();
-                        sendMessage(unChokedMessage, out, destPeerID);
+                        Object lock = peer.connectionLocks.get(destPeerID);
+                        synchronized (lock) {
+                            DataOutputStream out = new DataOutputStream(requestSocket.getOutputStream());
+                            out.flush();
+                            byte[] unChokedMessage = Messages.getUnChokeMessage();
+                            sendMessage(unChokedMessage, out, destPeerID);
+                        }
                     }
                     // Re choke if it is not in the preferred neighbors list. Otherwise, it should remain unchoked.
                     if (!peer.preferredNeighbors.contains(destPeerID)) {
                         // not the best solution but it works
                         Socket requestSocket = peer.connections.get(destPeerID);
-                        DataOutputStream out = new DataOutputStream(requestSocket.getOutputStream());
-                        out.flush();
-                        byte[] chokedMessage = Messages.getChokeMessage();
-                        sendMessage(chokedMessage, out, destPeerID);
+                        Object lock = peer.connectionLocks.get(destPeerID);
+                        synchronized (lock) {
+                            DataOutputStream out = new DataOutputStream(requestSocket.getOutputStream());
+                            out.flush();
+                            byte[] chokedMessage = Messages.getChokeMessage();
+                            sendMessage(chokedMessage, out, destPeerID);
+                        }
                     }
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
@@ -107,20 +119,26 @@ public class PeerThread extends Thread{
                     else
                     {
                         Socket requestSocket = peer.connections.get(destPeerID);
-                        DataOutputStream out = new DataOutputStream(requestSocket.getOutputStream());
-                        out.flush();
-                        byte[] unChokedMessage = Messages.getUnChokeMessage();
-                        sendMessage(unChokedMessage, out, destPeerID);
+                        Object lock = peer.connectionLocks.get(destPeerID);
+                        synchronized (lock) {
+                            DataOutputStream out = new DataOutputStream(requestSocket.getOutputStream());
+                            out.flush();
+                            byte[] unChokedMessage = Messages.getUnChokeMessage();
+                            sendMessage(unChokedMessage, out, destPeerID);
+                        }
 
                     }
                     // Re choke if it is not in the preferred neighbors list. Otherwise, it should remain unchoked.
                     if (!peer.preferredNeighbors.contains(destPeerID)){
                         // not the best solution but it works
                         Socket requestSocket = peer.connections.get(destPeerID);
-                        DataOutputStream out = new DataOutputStream(requestSocket.getOutputStream());
-                        out.flush();
-                        byte[] chokedMessage = Messages.getChokeMessage();
-                        sendMessage(chokedMessage, out, destPeerID);
+                        Object lock = peer.connectionLocks.get(destPeerID);
+                        synchronized (lock) {
+                            DataOutputStream out = new DataOutputStream(requestSocket.getOutputStream());
+                            out.flush();
+                            byte[] chokedMessage = Messages.getChokeMessage();
+                            sendMessage(chokedMessage, out, destPeerID);
+                        }
                     }
                 } catch (InterruptedException | IOException e) {
                     throw new RuntimeException(e);
@@ -148,21 +166,27 @@ public class PeerThread extends Thread{
                     for (int i = 0; i < toBeChoked.size(); i++)
                     {
                         int destPeerID = toBeChoked.get(i);
+                        Object lock = peer.connectionLocks.get(destPeerID);
                         Socket requestSocket = peer.connections.get(destPeerID);
-                        DataOutputStream out = new DataOutputStream(requestSocket.getOutputStream());
-                        out.flush();
-                        byte[] chokedMessage = Messages.getChokeMessage();
-                        sendMessage(chokedMessage, out, destPeerID);
+                        synchronized (lock) {
+                            DataOutputStream out = new DataOutputStream(requestSocket.getOutputStream());
+                            out.flush();
+                            byte[] chokedMessage = Messages.getChokeMessage();
+                            sendMessage(chokedMessage, out, destPeerID);
+                        }
                     }
                     // Send unchokes
                     for (int i = 0; i < toBeUnChoked.size(); i++)
                     {
                         int destPeerID = toBeUnChoked.get(i);
+                        Object lock = peer.connectionLocks.get(destPeerID);
                         Socket requestSocket = peer.connections.get(destPeerID);
-                        DataOutputStream out = new DataOutputStream(requestSocket.getOutputStream());
-                        out.flush();
-                        byte[] unChokedMessage = Messages.getUnChokeMessage();
-                        sendMessage(unChokedMessage, out, destPeerID);
+                        synchronized (lock) {
+                            DataOutputStream out = new DataOutputStream(requestSocket.getOutputStream());
+                            out.flush();
+                            byte[] unChokedMessage = Messages.getUnChokeMessage();
+                            sendMessage(unChokedMessage, out, destPeerID);
+                        }
                     }
 
                 } catch (InterruptedException | IOException e) {
@@ -173,11 +197,8 @@ public class PeerThread extends Thread{
     }
     public void sendMessage(byte[] msg, DataOutputStream out, int id) {
         try {
-           Object lock = peer.connectionLocks.get(id);
-           synchronized (lock) {
-               out.write(msg);
-               out.flush();
-           }
+           out.write(msg);
+           out.flush();
         } catch (IOException ioException) {
             ioException.printStackTrace();
         }
