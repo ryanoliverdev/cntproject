@@ -15,6 +15,7 @@ public class Messages {
         {
             handshakeMessage[i] = 0; //put in 0 bits for 10 bytes
         }
+
         System.arraycopy(peerIDbytes, 0, handshakeMessage, 28, 4);
         return handshakeMessage;
     }
@@ -56,6 +57,7 @@ public class Messages {
 
         // Send message to neighbor peers
         return unchokeMessage;
+
     }
     public static byte[] getInterestMessage()
     {
@@ -75,6 +77,7 @@ public class Messages {
 
         // Send peer message
         return interestMessage;
+
     }
     public static byte[] getUnInterestMessage()
     {
@@ -94,6 +97,7 @@ public class Messages {
 
         // Send peer message
         return uninterestMessage;
+
     }
     public static byte[] getHasFileMessage(byte[] indexField)
     {
@@ -116,6 +120,7 @@ public class Messages {
 
         // Send peer message
         return hasFileMessage;
+
     }
     public static byte[] getBitfieldMessage(byte[] bitfield)
     {
@@ -138,8 +143,10 @@ public class Messages {
 
         // Send peer message
         return bitfieldMessage;
+
     }
-    public static byte[] getRequestMessage(byte[] indexField){
+    public static byte[] getRequestMessage(byte[] indexField)
+    {
         int messageType = 6; // "request" message type
 
         // Create a byte array to store the message
@@ -159,6 +166,7 @@ public class Messages {
 
         // Send peer message
         return requestMessage;
+
     }
     public static byte[] getPiecesMessage(byte[] indexField, byte[] pieceContent)
     {
@@ -182,5 +190,6 @@ public class Messages {
         System.arraycopy(pieceContent, 0, sendPiecesMessage, 9, pieceContent.length);
         // Send peer message
         return sendPiecesMessage;
+
     }
 }

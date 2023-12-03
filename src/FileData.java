@@ -8,19 +8,23 @@ public class FileData {
     int fileSize;
     int pieceSize;
 
-    public FileData(int fSize, int pSize, String fName) {
+    public FileData(int fSize, int pSize, String fName)
+    {
         fileSize = fSize;
         pieceSize = pSize;
         fileName = fName;
     }
 
-    public void setData(byte[] indexField, byte[] piece, int peerID) {
-        try {
+    public void setData(byte[] indexField, byte[] piece, int peerID)
+    {
+        try
+        {
             File f = new File("./project_config_file_small/" + peerID + "/" + fileName);
             RandomAccessFile file;
 
             // If the file doesn't exist, create it and set its length
-            if (!f.exists()) {
+            if (!f.exists())
+            {
                 file = new RandomAccessFile(f, "rw");
                 file.setLength(fileSize);
             } else {
@@ -41,13 +45,17 @@ public class FileData {
 
             // Close the file
             file.close();
-        } catch (IOException e) {
+        }
+        catch (IOException e)
+        {
             e.printStackTrace();
         }
     }
 
-    public byte[] getData(byte[] indexField, String filePath) {
+    public byte[] getData(byte[] indexField, String filePath)
+    {
         byte[] pieceData = null;
+
         try {
             // Convert the indexField byte array to an int
             int index = ByteBuffer.wrap(indexField).getInt();
@@ -69,7 +77,9 @@ public class FileData {
             file.close();
 
 
-        } catch (IOException e) {
+        }
+        catch (IOException e)
+        {
             e.printStackTrace();
         }
         return pieceData;

@@ -3,8 +3,8 @@ import java.util.LinkedHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class peerProcess {
-    static String commonPath = "./project_config_file_large/Common.cfg";
-    static String peerInfoPath = "./project_config_file_large/PeerInfo.cfg";
+    static String commonPath = "./project_config_file_small/Common.cfg";
+    static String peerInfoPath = "./project_config_file_small/PeerInfo.cfg";
     public static void main(String[] args){
         final Object lock = new Object();
 

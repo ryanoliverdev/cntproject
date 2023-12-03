@@ -9,7 +9,8 @@ public class ReadFile {
 
         LinkedHashMap<String, String> commonInfo = new LinkedHashMap<String, String>();
 
-        try {
+        try
+        {
             File commonFile = new File(path);
             Scanner reader = new Scanner(commonFile);
 
@@ -33,7 +34,8 @@ public class ReadFile {
     {
         LinkedHashMap<Integer, String[]> peerInfo = new LinkedHashMap<Integer, String[]>();
 
-        try {
+        try
+        {
             File peerFile = new File(path);
             Scanner reader = new Scanner(peerFile);
 
