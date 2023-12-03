@@ -3,11 +3,12 @@
 
 Write a P2P file transfer program that is like BitTorrent
 
-## Group Members
+## Group Members 
+### Group # 43
 
  - Ryan Oliver
  - Jonathan Levy
- - Abhiram L
+ - Abhiram Lingamsetty
 
 ## Contributions
 - Jonathan: 800 lines of code. Setup crucial peerThread, Peer, Client, FileTransfer and Server functionality for getting critical choking, interested, neighbors, and other important functions setup properly.  
