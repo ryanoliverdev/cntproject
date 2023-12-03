@@ -90,7 +90,9 @@ public class Peer
         pInfo = peerInfo;
         logger = new FileLogger(peerID);
         logger.loggingStart();
-        if (hasFile){
+
+        if (hasFile)
+        {
             numOfPiecesHave = (int) Math.ceil((double) fileSize / pieceSize);
         }
         else
@@ -140,6 +142,8 @@ public class Peer
                 interestedNeighbors.add(neighborID);
             }
         }
+
+        // If this peer has the file, then preferred neighbors are a random list of k interested
         if (hasFile)
         {
             // preferred neighbors become a random list of k interested
@@ -156,6 +160,7 @@ public class Peer
                     return neighbors.get(o1).compareTo(neighbors.get(o2));
                 }
             });
+
             Collections.reverse(interestedNeighbors);
             int endIndex = Math.min(k, interestedNeighbors.size());
             preferredNeighbors = new ArrayList<>(interestedNeighbors.subList(0, endIndex));
@@ -166,6 +171,7 @@ public class Peer
     {
         ArrayList<Integer> prefNeighbors = new ArrayList<>(preferredNeighbors);
         System.out.println("Number of preferred neighbors: " + prefNeighbors.size());
+
         return prefNeighbors;
     }
 
@@ -174,11 +180,14 @@ public class Peer
         // Choked contains all available neighbors (unchoked or choked)
         int numOfNeighbors = isChokedPeer.size();
         ConcurrentHashMap<Integer, Double> newNeighbors = new ConcurrentHashMap<>();
-        for (Map.Entry<Integer, Boolean> entry : isChokedPeer.entrySet()) {
+
+        for (Map.Entry<Integer, Boolean> entry : isChokedPeer.entrySet())
+        {
             Integer peerID = entry.getKey();
             // initial download rate = 0.0
             newNeighbors.putIfAbsent(peerID, 0.0);
         }
+
         this.neighbors = newNeighbors;
    }
 
@@ -186,10 +195,13 @@ public class Peer
    {
        // get all choked neighbors that are interested
        ArrayList<Integer> possibleOptimisticNeighbors = new ArrayList<>();
-       for (Map.Entry<Integer, Boolean> entry : isChokedPeer.entrySet()) {
+
+       for (Map.Entry<Integer, Boolean> entry : isChokedPeer.entrySet())
+       {
            Integer peerID = entry.getKey();
            Boolean choked = entry.getValue();
            Boolean interested = isInterestedPeer.get(peerID);
+
            if (choked && interested)
            {
                possibleOptimisticNeighbors.add(peerID);
