@@ -21,9 +21,12 @@ public class Peer
     boolean hasFile;
     int kNeighbors;
 
-    byte[] bitfield = new byte[0];
+    int numOfPieces;
+    int numOfPiecesHave;
+    byte[] bitfield;
     int optimisticallyUnChokedNeighbor = -1;
     ConcurrentHashMap<Integer, Socket> connections = new ConcurrentHashMap<>();
+    ConcurrentHashMap<Integer, Object> connectionLocks = new ConcurrentHashMap<>();
     ConcurrentHashMap<Integer, Boolean> isChokedPeer = new ConcurrentHashMap<>();
     ConcurrentHashMap<Integer, Boolean> isInterestedPeer = new ConcurrentHashMap<>();
     ConcurrentHashMap<Integer, Boolean> hasFilePeers = new ConcurrentHashMap<>();
@@ -34,7 +37,6 @@ public class Peer
 
     // PeerID's of preferredNeighbors along with download rates (maybe can get rid of these after sorting)\
     public ArrayList<Integer> preferredNeighbors = new ArrayList<>();
-    public ArrayList<Integer> interestedNeighbors = new ArrayList<>();
     public void chokePeer(int srcPeerID)
     {
         isChokedPeer.put(srcPeerID, true);
@@ -61,7 +63,7 @@ public class Peer
     }
     public void setOwnBitfield(byte[] bf)
     {
-        this.bitfield = bf;
+        bitfield = bf;
     }
     FileLogger logger;
 
@@ -75,16 +77,24 @@ public class Peer
         fileSize = Integer.parseInt(commonInfo.get("FileSize"));
         pieceSize = Integer.parseInt(commonInfo.get("PieceSize"));
         kNeighbors = Integer.parseInt(commonInfo.get("NumberOfPreferredNeighbors"));
-        fileData = new FileData(fileSize, pieceSize);
+        fileData = new FileData(fileSize, pieceSize, fileName);
         // Reading in all PeerInfo.cfg Info
-
+        numOfPieces = (int) Math.ceil((double) fileSize / pieceSize);
+        bitfield = new byte[(numOfPieces + 7)/8];
+        System.out.println((numOfPieces + 7)/8);
         hostName = peerInfo.get(id)[0];
         portNumber = Integer.parseInt(peerInfo.get(id)[1]);
         hasFile = Integer.parseInt(peerInfo.get(id)[2]) == 1;
         pInfo = peerInfo;
         logger = new FileLogger(peerID);
         logger.loggingStart();
-
+        if (hasFile){
+            numOfPiecesHave = (int) Math.ceil((double) fileSize / pieceSize);
+        }
+        else
+        {
+            numOfPiecesHave = 0;
+        }
 
     }
     public void sendBitfield(int srcPeerID)
@@ -117,6 +127,7 @@ public class Peer
     }
     public void setPreferredNeighbors(int k)
     {
+        ArrayList<Integer> interestedNeighbors = new ArrayList<>();
         // Collect interested neighbors into an array
         for (Map.Entry<Integer, Boolean> entry : isInterestedPeer.entrySet())
         {
@@ -146,11 +157,13 @@ public class Peer
             Collections.reverse(interestedNeighbors);
             int endIndex = Math.min(k, interestedNeighbors.size());
             preferredNeighbors = new ArrayList<>(interestedNeighbors.subList(0, endIndex));
+
         }
     }
     public ArrayList<Integer> getPreferredNeighbors()
     {
         ArrayList<Integer> prefNeighbors = new ArrayList<>(preferredNeighbors);
+        System.out.println("Number of preferred neighbors: " + prefNeighbors.size());
         return prefNeighbors;
     }
 
@@ -162,7 +175,7 @@ public class Peer
         for (Map.Entry<Integer, Boolean> entry : isChokedPeer.entrySet()) {
             Integer peerID = entry.getKey();
             // initial download rate = 0.0
-            newNeighbors.put(peerID, 0.0);
+            newNeighbors.putIfAbsent(peerID, 0.0);
         }
         this.neighbors = newNeighbors;
    }

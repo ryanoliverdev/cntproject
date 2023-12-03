@@ -169,7 +169,7 @@ public class Messages {
         byte[] sendPiecesMessage = new byte[9 + pieceContent.length];
 
         // Calculate the message length (1 byte for the type)
-        int messageLength = 5 + pieceContent.length;
+        int messageLength = 1 + pieceContent.length;
         ByteBuffer buffer = ByteBuffer.allocate(4);
         buffer.putInt(messageLength);
         System.arraycopy(buffer.array(), 0, sendPiecesMessage, 0, 4);
@@ -177,7 +177,7 @@ public class Messages {
         // Set the message type
         sendPiecesMessage[4] = (byte) messageType;
 
-        // Calculate the payload length (4 bytes for the indexField)
+        // Calculate the payload length (4 bytes for the in dexField)
         System.arraycopy(indexField, 0, sendPiecesMessage, 5, 4);
         System.arraycopy(pieceContent, 0, sendPiecesMessage, 9, pieceContent.length);
         // Send peer message

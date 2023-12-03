@@ -8,14 +8,15 @@ public class FileData {
     int fileSize;
     int pieceSize;
 
-    public FileData(int fSize, int pSize) {
+    public FileData(int fSize, int pSize, String fName) {
         fileSize = fSize;
         pieceSize = pSize;
+        fileName = fName;
     }
 
-    public void setData(byte[] indexField, byte[] piece) {
+    public void setData(byte[] indexField, byte[] piece, int peerID) {
         try {
-            File f = new File("./test.jpg");
+            File f = new File("./project_config_file_large/" + peerID + "/" + fileName);
             RandomAccessFile file;
 
             // If the file doesn't exist, create it and set its length
@@ -46,7 +47,6 @@ public class FileData {
     }
 
     public byte[] getData(byte[] indexField, String filePath) {
-        System.out.println("PLS DONT HANG");
         byte[] pieceData = null;
         try {
             // Convert the indexField byte array to an int
@@ -63,7 +63,7 @@ public class FileData {
 
             // Seek to the position and read the piece
             file.seek(position);
-            file.read(pieceData);
+            file.readFully(pieceData);
 
             // Close the file
             file.close();
