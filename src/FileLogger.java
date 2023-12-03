@@ -96,7 +96,7 @@ public class FileLogger {
                     break;
                 case 6:
                     // If peer 1 receives a have message from peer 2
-                    logFileData = formattedDateTime + ": Peer " + peerID + " received the ‘have’ message from " + peerID2 + " for the piece" + pieceIndex + ".";
+                    logFileData = formattedDateTime + ": Peer " + peerID + " received the ‘have’ message from " + peerID2 + " for the piece " + pieceIndex + ".";
                     break;
                 case 7:
                     // If peer 1 receives an interested message from peer 2

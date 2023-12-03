@@ -25,6 +25,7 @@ public class Peer
     int numOfPiecesHave;
     byte[] bitfield;
     int optimisticallyUnChokedNeighbor = -1;
+    ConcurrentHashMap<Integer, Integer> piecesSent = new ConcurrentHashMap<>();
     ConcurrentHashMap<Integer, Socket> connections = new ConcurrentHashMap<>();
     ConcurrentHashMap<Integer, Object> connectionLocks = new ConcurrentHashMap<>();
     ConcurrentHashMap<Integer, Boolean> isChokedPeer = new ConcurrentHashMap<>();
@@ -32,6 +33,7 @@ public class Peer
     ConcurrentHashMap<Integer, Boolean> hasFilePeers = new ConcurrentHashMap<>();
     ConcurrentHashMap<Integer, byte[]> hasPiecesPeers = new ConcurrentHashMap<>();
     ConcurrentHashMap<Integer, Double> neighbors = new ConcurrentHashMap<>();
+    ConcurrentHashMap<Integer, Peer> otherPeers = new ConcurrentHashMap<>();
     LinkedHashMap<Integer, String[]> pInfo;
     // Stores neighbors and download rate (as a double)
 
@@ -80,8 +82,8 @@ public class Peer
         fileData = new FileData(fileSize, pieceSize, fileName);
         // Reading in all PeerInfo.cfg Info
         numOfPieces = (int) Math.ceil((double) fileSize / pieceSize);
-        bitfield = new byte[(numOfPieces + 7)/8];
-        System.out.println((numOfPieces + 7)/8);
+        bitfield = new byte[numOfPieces];
+        System.out.println(numOfPieces);
         hostName = peerInfo.get(id)[0];
         portNumber = Integer.parseInt(peerInfo.get(id)[1]);
         hasFile = Integer.parseInt(peerInfo.get(id)[2]) == 1;
