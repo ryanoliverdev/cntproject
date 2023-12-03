@@ -140,7 +140,7 @@ public class Messages {
         return bitfieldMessage;
     }
     public static byte[] getRequestMessage(byte[] indexField){
-        int messageType = 4; // "hasFile" message type
+        int messageType = 6; // "request" message type
 
         // Create a byte array to store the message
         byte[] requestMessage = new byte[9]; // 4 bytes for length, 1 byte for message type, 4 bytes for payload
@@ -162,13 +162,14 @@ public class Messages {
     }
     public static byte[] getPiecesMessage(byte[] indexField, byte[] pieceContent)
     {
-        int messageType = 4; // "hasFile" message type
+        int messageType = 7; // "pieces" message type
 
         // Create a byte array to store the message
-        byte[] sendPiecesMessage = new byte[9]; // 4 bytes for length, 1 byte for message type, V
+        // 4 bytes for length, 1 byte for message type, 4 bytes for index field, variable pieceContent length
+        byte[] sendPiecesMessage = new byte[9 + pieceContent.length];
 
         // Calculate the message length (1 byte for the type)
-        int messageLength = 5;
+        int messageLength = 5 + pieceContent.length;
         ByteBuffer buffer = ByteBuffer.allocate(4);
         buffer.putInt(messageLength);
         System.arraycopy(buffer.array(), 0, sendPiecesMessage, 0, 4);

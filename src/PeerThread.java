@@ -14,8 +14,6 @@ public class PeerThread extends Thread{
     }
     public void run()
     {
-
-
         // Convert to milliseconds
         int unchokingInterval = peer.unchokingInterval * 1000;
         int optimisticUnchokingInterval = peer.optimisticUnchokingInterval * 1000;
@@ -38,40 +36,36 @@ public class PeerThread extends Thread{
 
                     ArrayList<Integer> toBeUnChoked = new ArrayList<>(newPref);
                     toBeUnChoked.removeAll(oldPref);
-
                     // Send chokes
                     for (int i = 0; i < toBeChoked.size(); i++)
                     {
                         int destPeerID = toBeChoked.get(i);
-                        String destHostName = peer.pInfo.get(destPeerID)[0];
-                        int destPortNum = Integer.parseInt(peer.pInfo.get(destPeerID)[1]);
-                        Socket requestSocket = new Socket(destHostName, destPortNum);
+                        if (destPeerID == -1)
+                        {
+                            continue;
+                        }
+                        System.out.println("IS CHOKED (false?): " + peer.isChokedPeer.get(destPeerID));
+                        Socket requestSocket = peer.connections.get(destPeerID);
                         DataOutputStream out = new DataOutputStream(requestSocket.getOutputStream());
                         out.flush();
                         byte[] chokedMessage = Messages.getChokeMessage();
                         sendMessage(chokedMessage, out);
-                        out.close();
                     }
                     // Send unchokes
                     for (int i = 0; i < toBeUnChoked.size(); i++)
                     {
                         // not the best solution but it works
                         int destPeerID = toBeUnChoked.get(i);
-                        String destHostName = peer.pInfo.get(destPeerID)[0];
-                        int destPortNum = Integer.parseInt(peer.pInfo.get(destPeerID)[1]);
-                        Socket requestSocket = null;
-
-                        try {
-                            requestSocket = new Socket(destHostName, destPortNum);
-                            // rest of your code
-                        } catch (ConnectException e) {
-                            System.out.println("Failed to connect to " + destHostName + " on port " + destPortNum);
-                            e.printStackTrace();
-                        }                        DataOutputStream out = new DataOutputStream(requestSocket.getOutputStream());
+                        if (destPeerID == -1)
+                        {
+                            continue;
+                        }
+                        System.out.println("IS CHOKED (true?): " + peer.isChokedPeer.get(destPeerID));
+                        Socket requestSocket = peer.connections.get(destPeerID);
+                        DataOutputStream out = new DataOutputStream(requestSocket.getOutputStream());
                         out.flush();
                         byte[] unChokedMessage = Messages.getUnChokeMessage();
                         sendMessage(unChokedMessage, out);
-                        out.close();
                     }
 
                 } catch (InterruptedException | IOException e) {
@@ -80,48 +74,39 @@ public class PeerThread extends Thread{
                 // Perform optimistic unchoking operation
                 try {
                     Thread.sleep(optimisticUnchokingInterval - unchokingInterval);
-
-                    peer.setOptimisticallyUnChokedNeighbor();
-                    int oldOptUnChokedNeighbor = peer.getOptimisticallyUnChokedNeighbor();
-
-                    if(oldOptUnChokedNeighbor == -1)
+                    // Choke previous opt
+                    int oldDestPeerID = peer.getOptimisticallyUnChokedNeighbor();
+                    if (oldDestPeerID != -1 && !peer.isChokedPeer.get(oldDestPeerID))
                     {
-                        continue;
-                    }
-
-                    // Re choke if it is not in the preferred neighbors list. Otherwise, it should remain unchoked.
-                    if (!peer.preferredNeighbors.contains(oldOptUnChokedNeighbor))
-                    {
-
-                        // not the best solution but it works
-                        String destHostName = peer.pInfo.get(oldOptUnChokedNeighbor)[0];
-                        int destPortNum = Integer.parseInt(peer.pInfo.get(oldOptUnChokedNeighbor)[1]);
-
-                        System.out.println("Host and destPort are: " + destPortNum + " " + destHostName);
-
-                        if(destPortNum != -1) {
-                            Socket requestSocket = new Socket(destHostName, destPortNum);
-                            DataOutputStream out = new DataOutputStream(requestSocket.getOutputStream());
-                            out.flush();
-                            byte[] chokedMessage = Messages.getChokeMessage();
-                            sendMessage(chokedMessage, out);
-                        }
-
-                    }
-                    // By nature this is choked to begin with no need to check anything
-                    peer.setOptimisticallyUnChokedNeighbor();
-
-                    int newOptUnChokedNeighbor = peer.getOptimisticallyUnChokedNeighbor();
-                    String destHostName = peer.pInfo.get(newOptUnChokedNeighbor)[0];
-                    int destPortNum = Integer.parseInt(peer.pInfo.get(newOptUnChokedNeighbor)[1]);
-
-                    if(destPortNum != -1) {
-                        Socket requestSocket = new Socket(destHostName, destPortNum);
+                        Socket requestSocket = peer.connections.get(oldDestPeerID);
                         DataOutputStream out = new DataOutputStream(requestSocket.getOutputStream());
                         out.flush();
                         byte[] unChokedMessage = Messages.getUnChokeMessage();
                         sendMessage(unChokedMessage, out);
+
                     }
+                    peer.setOptimisticallyUnChokedNeighbor();
+                    int destPeerID = peer.getOptimisticallyUnChokedNeighbor();
+                    if(destPeerID == -1)
+                    {
+                        continue;
+                    }
+                    // Re choke if it is not in the preferred neighbors list. Otherwise,
+                    // it's a preferred neighbor is unchoked.
+                    if (!peer.preferredNeighbors.contains(destPeerID)){
+                        // not the best solution but it works
+                        Socket requestSocket = peer.connections.get(destPeerID);
+                        DataOutputStream out = new DataOutputStream(requestSocket.getOutputStream());
+                        out.flush();
+                        byte[] chokedMessage = Messages.getChokeMessage();
+                        sendMessage(chokedMessage, out);
+                    }
+                    // By nature this is choked to begin with no need to check anything
+//                    Socket requestSocket = peer.connections.get(destPeerID);
+//                    DataOutputStream out = new DataOutputStream(requestSocket.getOutputStream());
+//                    out.flush();
+//                    byte[] unChokedMessage = Messages.getUnChokeMessage();
+//                    sendMessage(unChokedMessage, out);
 
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
@@ -132,39 +117,39 @@ public class PeerThread extends Thread{
                 // Perform optimistic unchoking operation
                 try {
                     Thread.sleep(optimisticUnchokingInterval - unchokingInterval);
-                    peer.setOptimisticallyUnChokedNeighbor();
-                    int oldOptUnChokedNeighbor = peer.getOptimisticallyUnChokedNeighbor();
+                    // Choke previous opt
+                    int oldDestPeerID = peer.getOptimisticallyUnChokedNeighbor();
+                    if (oldDestPeerID != -1 && !peer.isChokedPeer.get(oldDestPeerID))
+                    {
+                        Socket requestSocket = peer.connections.get(oldDestPeerID);
+                        DataOutputStream out = new DataOutputStream(requestSocket.getOutputStream());
+                        out.flush();
+                        byte[] unChokedMessage = Messages.getUnChokeMessage();
+                        sendMessage(unChokedMessage, out);
 
-                    if(oldOptUnChokedNeighbor == -1)
+                    }
+                    peer.setOptimisticallyUnChokedNeighbor();
+                    int destPeerID = peer.getOptimisticallyUnChokedNeighbor();
+                    if(destPeerID == -1)
                     {
                         continue;
                     }
 
                     // Re choke if it is not in the preferred neighbors list. Otherwise, it should remain unchoked.
-                    if (!peer.preferredNeighbors.contains(oldOptUnChokedNeighbor)){
+                    if (!peer.preferredNeighbors.contains(destPeerID)){
                         // not the best solution but it works
-                        String destHostName = peer.pInfo.get(oldOptUnChokedNeighbor)[0];
-                        int destPortNum = Integer.parseInt(peer.pInfo.get(oldOptUnChokedNeighbor)[1]);
-                        if(destPortNum != -1) {
-                            Socket requestSocket = new Socket(destHostName, destPortNum);
-                            DataOutputStream out = new DataOutputStream(requestSocket.getOutputStream());
-                            out.flush();
-                            byte[] chokedMessage = Messages.getChokeMessage();
-                            sendMessage(chokedMessage, out);
-                        }
-                    }
-                    // By nature this is choked to begin with no need to check anything
-                    peer.setOptimisticallyUnChokedNeighbor();
-                    int newOptUnChokedNeighbor = peer.getOptimisticallyUnChokedNeighbor();
-                    String destHostName = peer.pInfo.get(newOptUnChokedNeighbor)[0];
-                    int destPortNum = Integer.parseInt(peer.pInfo.get(newOptUnChokedNeighbor)[1]);
-                    if(destPortNum != -1) {
-                        Socket requestSocket = new Socket(destHostName, destPortNum);
+                        Socket requestSocket = peer.connections.get(destPeerID);
                         DataOutputStream out = new DataOutputStream(requestSocket.getOutputStream());
                         out.flush();
-                        byte[] unChokedMessage = Messages.getUnChokeMessage();
-                        sendMessage(unChokedMessage, out);
+                        byte[] chokedMessage = Messages.getChokeMessage();
+                        sendMessage(chokedMessage, out);
                     }
+//                    // By nature this is choked to begin with no need to check anything
+//                    Socket requestSocket = peer.connections.get(destPeerID);
+//                    DataOutputStream out = new DataOutputStream(requestSocket.getOutputStream());
+//                    out.flush();
+//                    byte[] unChokedMessage = Messages.getUnChokeMessage();
+//                    sendMessage(unChokedMessage, out);
                 } catch (InterruptedException | IOException e) {
                     throw new RuntimeException(e);
                 }
@@ -184,33 +169,34 @@ public class PeerThread extends Thread{
 
                     ArrayList<Integer> toBeUnChoked = new ArrayList<>(newPref);
                     toBeUnChoked.removeAll(oldPref);
-
                     // Send chokes
                     for (int i = 0; i < toBeChoked.size(); i++)
                     {
                         int destPeerID = toBeChoked.get(i);
-                        String destHostName = peer.pInfo.get(destPeerID)[0];
-                        int destPortNum = Integer.parseInt(peer.pInfo.get(destPeerID)[1]);
-                        Socket requestSocket = new Socket(destHostName, destPortNum);
+                        if (destPeerID == -1)
+                        {
+                            continue;
+                        }
+                        Socket requestSocket = peer.connections.get(destPeerID);
                         DataOutputStream out = new DataOutputStream(requestSocket.getOutputStream());
                         out.flush();
                         byte[] chokedMessage = Messages.getChokeMessage();
                         sendMessage(chokedMessage, out);
-                        out.close();
                     }
                     // Send unchokes
                     for (int i = 0; i < toBeUnChoked.size(); i++)
                     {
                         // not the best solution but it works
                         int destPeerID = toBeUnChoked.get(i);
-                        String destHostName = peer.pInfo.get(destPeerID)[0];
-                        int destPortNum = Integer.parseInt(peer.pInfo.get(destPeerID)[1]);
-                        Socket requestSocket = new Socket(destHostName, destPortNum);
+                        if (destPeerID == -1)
+                        {
+                            continue;
+                        }
+                        Socket requestSocket = peer.connections.get(destPeerID);
                         DataOutputStream out = new DataOutputStream(requestSocket.getOutputStream());
                         out.flush();
                         byte[] unChokedMessage = Messages.getUnChokeMessage();
                         sendMessage(unChokedMessage, out);
-                        out.close();
                     }
                 } catch (InterruptedException | IOException e) {
                     throw new RuntimeException(e);

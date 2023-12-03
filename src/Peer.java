@@ -5,9 +5,11 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.nio.ByteBuffer;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Peer
 {
+    FileData fileData;
     int unchokingInterval;
     int optimisticUnchokingInterval;
     String fileName;
@@ -20,16 +22,17 @@ public class Peer
     int kNeighbors;
 
     byte[] bitfield = new byte[0];
-    int optimisticallyUnChokedNeighbor;
-    HashMap<Integer, Boolean> isChokedPeer = new HashMap<>();
-    HashMap<Integer, Boolean> isInterestedPeer = new HashMap<>();
-    HashMap<Integer, Boolean> hasFilePeers = new HashMap<>();
-    HashMap<Integer, byte[]> hasPiecesPeers = new HashMap<>();
-    HashMap<Integer, Double> neighbors = new HashMap<>();
+    int optimisticallyUnChokedNeighbor = -1;
+    ConcurrentHashMap<Integer, Socket> connections = new ConcurrentHashMap<>();
+    ConcurrentHashMap<Integer, Boolean> isChokedPeer = new ConcurrentHashMap<>();
+    ConcurrentHashMap<Integer, Boolean> isInterestedPeer = new ConcurrentHashMap<>();
+    ConcurrentHashMap<Integer, Boolean> hasFilePeers = new ConcurrentHashMap<>();
+    ConcurrentHashMap<Integer, byte[]> hasPiecesPeers = new ConcurrentHashMap<>();
+    ConcurrentHashMap<Integer, Double> neighbors = new ConcurrentHashMap<>();
     LinkedHashMap<Integer, String[]> pInfo;
     // Stores neighbors and download rate (as a double)
 
-    // PeerID's of preferredNeighbors along with download rates (maybe can get rid of these after sorting)
+    // PeerID's of preferredNeighbors along with download rates (maybe can get rid of these after sorting)\
     public ArrayList<Integer> preferredNeighbors = new ArrayList<>();
     public ArrayList<Integer> interestedNeighbors = new ArrayList<>();
     public void chokePeer(int srcPeerID)
@@ -64,6 +67,7 @@ public class Peer
 
     public Peer(int id, LinkedHashMap<String, String> commonInfo, LinkedHashMap<Integer, String[]> peerInfo)
     {
+
         peerID = id;
         unchokingInterval = Integer.parseInt(commonInfo.get("UnchokingInterval"));
         optimisticUnchokingInterval = Integer.parseInt(commonInfo.get("OptimisticUnchokingInterval"));
@@ -71,6 +75,7 @@ public class Peer
         fileSize = Integer.parseInt(commonInfo.get("FileSize"));
         pieceSize = Integer.parseInt(commonInfo.get("PieceSize"));
         kNeighbors = Integer.parseInt(commonInfo.get("NumberOfPreferredNeighbors"));
+        fileData = new FileData(fileSize, pieceSize);
         // Reading in all PeerInfo.cfg Info
 
         hostName = peerInfo.get(id)[0];
@@ -132,12 +137,13 @@ public class Peer
         else
         {
             // This should even work on initialization
-            Collections.sort(interestedNeighbors, new Comparator<Integer>() {
+            interestedNeighbors.sort(new Comparator<Integer>() {
                 @Override
                 public int compare(Integer o1, Integer o2) {
                     return neighbors.get(o1).compareTo(neighbors.get(o2));
                 }
             });
+            Collections.reverse(interestedNeighbors);
             int endIndex = Math.min(k, interestedNeighbors.size());
             preferredNeighbors = new ArrayList<>(interestedNeighbors.subList(0, endIndex));
         }
@@ -152,7 +158,7 @@ public class Peer
     {
         // Choked contains all available neighbors (unchoked or choked)
         int numOfNeighbors = isChokedPeer.size();
-        HashMap<Integer, Double> newNeighbors = new HashMap<>();
+        ConcurrentHashMap<Integer, Double> newNeighbors = new ConcurrentHashMap<>();
         for (Map.Entry<Integer, Boolean> entry : isChokedPeer.entrySet()) {
             Integer peerID = entry.getKey();
             // initial download rate = 0.0
@@ -168,7 +174,8 @@ public class Peer
        for (Map.Entry<Integer, Boolean> entry : isChokedPeer.entrySet()) {
            Integer peerID = entry.getKey();
            Boolean choked = entry.getValue();
-           if (choked && isInterestedPeer.get(peerID))
+           Boolean interested = isInterestedPeer.get(peerID);
+           if (choked && interested)
            {
                possibleOptimisticNeighbors.add(peerID);
            }

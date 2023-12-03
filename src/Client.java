@@ -28,6 +28,11 @@ public class Client extends Thread
                 int peerPort = Integer.parseInt(peerInfo.get(id)[1]);
                 String hostName = peerInfo.get(id)[0];
                 requestSockets.put(id, new Socket(hostName, peerPort));
+                // Add new choked peer
+                peer.chokePeer(id);
+                // Add new uninterested peer
+                peer.unSetInterestPeer(id);
+
                 System.out.println("Connected to " + hostName + " in port " + peerPort);
                 DataOutputStream out = new DataOutputStream(requestSockets.get(id).getOutputStream());
                 out.flush();
@@ -73,7 +78,6 @@ public class Client extends Thread
 
                                 System.out.println("Handshake completed with " + peerIDStr);
                                 peer.logger.writeLogMessage(0, peer.peerID, destPeerID, 0, 0);
-
                                 if (peer.hasFile) {
                                     int numOfPieces = peer.fileSize / peer.pieceSize + 1;
 
@@ -88,19 +92,13 @@ public class Client extends Thread
                                 }
                             }
                         }
-                        // Add new choked peer
-                        peer.chokePeer(destPeerID);
-                        // Add new uninterested peer
-                        peer.setInterestPeer(destPeerID);
-                        // set neighbors
-                        peer.setInitialNeighbors();
                         // Message format for all other messages
                         byte[] lengthBuffer = new byte[4];
                         int length;
                         // Read the type of the message
                         byte[] typeBuffer = new byte[1];
                         int type;
-                        byte[] messageBuffer;
+                        byte[] messageBuffer = new byte[0];
 
                         // Send Bitfield
                         // TO DO: I know I redid this, you can simplify it if you'd like
@@ -110,9 +108,11 @@ public class Client extends Thread
                         length = ByteBuffer.wrap(lengthBuffer).getInt();
                         in.read(typeBuffer);
                         type = typeBuffer[0];
-                        messageBuffer = new byte[length - 1];
-                        in.read(messageBuffer);
-
+                        System.out.println("MESSAGE OF TYPE: " + type + " RECEIVED WITH LENGTH: " + length);
+                        if (length > 1) {
+                            messageBuffer = new byte[length - 1];
+                            in.read(messageBuffer);
+                        }
                         // Bitfield Message Received
                         if (type == 5) {
                             System.out.println("Set bitfield for " + destPeerID);
@@ -145,7 +145,6 @@ public class Client extends Thread
                             // Switch bool to true for interested peer
                             System.out.println("Set interest for " + destPeerID);
                             peer.setInterestPeer(destPeerID);
-
                             peer.logger.writeLogMessage(7, peer.peerID, destPeerID, 0, 0);
 
                         }
@@ -167,20 +166,18 @@ public class Client extends Thread
                             byte[] localBitfield = peer.bitfield;
                             byte[] peerBitfield = peer.hasPiecesPeers.get(destPeerID);
 
-                            int maxInd = Math.min(localBitfield.length, peerBitfield.length);
+                            BitSet localBitSet = BitSet.valueOf(localBitfield);
+                            BitSet peerBitSet = BitSet.valueOf(peerBitfield);
+
+                            // Clone peerBitSet because andNot() modifies the BitSet in place
+                            BitSet diff = (BitSet) peerBitSet.clone();
+                            // diff now contains bits that are in peerBitSet but not in localBitSet
+                            diff.andNot(localBitSet);
+
+                            // Convert diff to list of indices
                             ArrayList<Integer> pieceIndices = new ArrayList<>();
-                            for (int i = 0; i < maxInd; i++)
-                            {
-                                if (localBitfield[i] != peerBitfield[i])
-                                    pieceIndices.add(i);
-                            }
-                            if (peerBitfield.length > localBitfield.length)
-                            {
-                                int difference = peerBitfield.length - localBitfield.length;
-                                for (int i = localBitfield.length; i < difference; i++)
-                                {
-                                    pieceIndices.add(i);
-                                }
+                            for (int i = diff.nextSetBit(0); i >= 0; i = diff.nextSetBit(i+1)) {
+                                pieceIndices.add(i);
                             }
 
                             Random rand = new Random();
@@ -205,10 +202,66 @@ public class Client extends Thread
                         }
                         if (type == 6)
                         {
-
+                            System.out.println("Received Request Messsage");
+                            // Create a new array for the index field and copy the first 4 bytes of messageBuffer
+                            byte[] indexField = new byte[4];
+                            System.arraycopy(messageBuffer, 0, indexField, 0, 4);
+                            // Get piece content
+                            String filePath = "./project_config_file_large/" + peer.peerID + "/tree.jpg";
+                            byte[] pieceContent = peer.fileData.getData(indexField, filePath);
+                            byte[] piecesMessage = Messages.getPiecesMessage(indexField, pieceContent);
+                            sendMessage(piecesMessage, out);
                         }
+                        if (type == 7)
+                        {
+                            // Take in data
+                            // Create a new array for the index field and copy the first 4 bytes of messageBuffer
+                            System.out.println("Received Piece Message");
+                            byte[] indexField = new byte[4];
+                            System.arraycopy(messageBuffer, 0, indexField, 0, 4);
 
+                            // Create a new array for the piece content and copy the rest of messageBuffer
+                            byte[] pieceContent = new byte[messageBuffer.length - 4];
+                            System.arraycopy(messageBuffer, 4, pieceContent, 0, messageBuffer.length - 4);
+                            // Download piece
+                            peer.fileData.setData(indexField,pieceContent);
+                            int index = ByteBuffer.wrap(indexField).getInt();
 
+                            // Received piece, set bitfield accordingly
+                            peer.bitfield[index] = 1;
+                            if (true)
+                            {
+                                // Generate another random piece
+                                byte[] localBitfield = peer.bitfield;
+                                byte[] peerBitfield = peer.hasPiecesPeers.get(destPeerID);
+
+                                BitSet localBitSet = BitSet.valueOf(localBitfield);
+                                BitSet peerBitSet = BitSet.valueOf(peerBitfield);
+
+                                // Clone peerBitSet because andNot() modifies the BitSet in place
+                                BitSet diff = (BitSet) peerBitSet.clone();
+                                // diff now contains bits that are in peerBitSet but not in localBitSet
+                                diff.andNot(localBitSet);
+
+                                // Convert diff to list of indices
+                                ArrayList<Integer> pieceIndices = new ArrayList<>();
+                                for (int i = diff.nextSetBit(0); i >= 0; i = diff.nextSetBit(i+1)) {
+                                    pieceIndices.add(i);
+                                }
+
+                                Random rand = new Random();
+                                int randomIndex = rand.nextInt(pieceIndices.size());
+                                int randomPieceIndex = pieceIndices.get(randomIndex);
+
+                                ByteBuffer buffer = ByteBuffer.allocate(4);
+                                buffer.putInt(randomPieceIndex);
+
+                                byte[] nextIndexField = buffer.array();
+                                // Request
+                                byte[] requestMessage = Messages.getRequestMessage(nextIndexField);
+                                sendMessage(requestMessage, out);
+                            }
+                        }
                     }
                 } catch (IOException e) {
                     System.err.println("Error reading from socket: " + e.getMessage());
