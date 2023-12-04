@@ -8,23 +8,19 @@ public class FileData {
     int fileSize;
     int pieceSize;
 
-    public FileData(int fSize, int pSize, String fName)
-    {
+    public FileData(int fSize, int pSize, String fName) {
         fileSize = fSize;
         pieceSize = pSize;
         fileName = fName;
     }
 
-    public void setData(byte[] indexField, byte[] piece, int peerID)
-    {
-        try
-        {
-            File f = new File("./project_config_file_small/" + peerID + "/" + fileName);
+    public void setData(byte[] indexField, byte[] piece, int peerID) {
+        try {
+            File f = new File("./project_config_file_large/" + peerID + "/" + fileName);
             RandomAccessFile file;
 
             // If the file doesn't exist, create it and set its length
-            if (!f.exists())
-            {
+            if (!f.exists()) {
                 file = new RandomAccessFile(f, "rw");
                 file.setLength(fileSize);
             } else {
@@ -45,29 +41,28 @@ public class FileData {
 
             // Close the file
             file.close();
-        }
-        catch (IOException e)
-        {
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    public byte[] getData(byte[] indexField, String filePath)
-    {
+    public byte[] getData(byte[] indexField, String filePath) {
         byte[] pieceData = null;
 
         try {
             // Convert the indexField byte array to an int
             int index = ByteBuffer.wrap(indexField).getInt();
 
+            System.out.println("Index: " + index);
             // Calculate the position in the file where the piece starts
             int position = index * pieceSize;
 
             // Open the file
             RandomAccessFile file = new RandomAccessFile(filePath, "r");
 
-            // Create a byte array to hold the piece data
-            pieceData = new byte[pieceSize];
+            int maxSize = Math.min(pieceSize, fileSize - position);
+            // Create a byte array to store the piece
+            pieceData = new byte[maxSize];
 
             // Seek to the position and read the piece
             file.seek(position);
@@ -75,14 +70,10 @@ public class FileData {
 
             // Close the file
             file.close();
-
-
-        }
-        catch (IOException e)
-        {
+        } catch (IOException e) {
             e.printStackTrace();
         }
+
         return pieceData;
     }
 }
-

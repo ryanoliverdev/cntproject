@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class PeerThread extends Thread{
 
@@ -24,11 +25,13 @@ public class PeerThread extends Thread{
 
         while (true)
         {
-
+            ConcurrentHashMap<Integer, Double> rates = new ConcurrentHashMap<>();
+            // saves rates before unchoking
             for (Map.Entry<Integer,Integer> entry : peer.piecesSent.entrySet())
             {
                 int key = entry.getKey();
                 int value = entry.getValue();
+                rates.put(key, (double) value);
             }
 
             if (unchokingInterval < optimisticUnchokingInterval)
@@ -37,7 +40,12 @@ public class PeerThread extends Thread{
                 try
                 {
                     Thread.sleep(unchokingInterval);
-
+                    for (Map.Entry<Integer,Double> entry : rates.entrySet())
+                    {
+                        int key = entry.getKey();
+                        int value = peer.piecesSent.get(key);
+                        peer.neighbors.put(key, (value - rates.get(key)) / (double) unchokingInterval);
+                    }
                     // Old preferredNeighbors
                     ArrayList<Integer> oldPref = peer.getPreferredNeighbors();
 
@@ -155,7 +163,7 @@ public class PeerThread extends Thread{
                 // Perform optimistic unchoking operation
                 try
                 {
-                    Thread.sleep(optimisticUnchokingInterval - unchokingInterval);
+                    Thread.sleep(optimisticUnchokingInterval);
 
                     int oldDestPeerID = peer.getOptimisticallyUnChokedNeighbor();
                     peer.setOptimisticallyUnChokedNeighbor();
@@ -205,7 +213,12 @@ public class PeerThread extends Thread{
                 try
                 {
                     Thread.sleep(unchokingInterval - optimisticUnchokingInterval);
-
+                    for (Map.Entry<Integer,Double> entry : rates.entrySet())
+                    {
+                        int key = entry.getKey();
+                        int value = peer.piecesSent.get(key);
+                        peer.neighbors.put(key, (value - rates.get(key)) / (double) unchokingInterval);
+                    }
                     // Old preferredNeighbors
                     ArrayList<Integer> oldPref = peer.getPreferredNeighbors();
 
