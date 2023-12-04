@@ -20,7 +20,7 @@ public class Peer
     int portNumber;
     boolean hasFile;
     int kNeighbors;
-
+    boolean p2pFinished;
     int numOfPieces;
     int numOfPiecesHave;
     byte[] bitfield;
@@ -72,6 +72,7 @@ public class Peer
     public Peer(int id, LinkedHashMap<String, String> commonInfo, LinkedHashMap<Integer, String[]> peerInfo)
     {
 
+        p2pFinished = false;
         peerID = id;
         unchokingInterval = Integer.parseInt(commonInfo.get("UnchokingInterval"));
         optimisticUnchokingInterval = Integer.parseInt(commonInfo.get("OptimisticUnchokingInterval"));

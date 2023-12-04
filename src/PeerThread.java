@@ -25,6 +25,10 @@ public class PeerThread extends Thread{
 
         while (true)
         {
+//            if (peer.p2pFinished)
+//            {
+//                break;
+//            }
             ConcurrentHashMap<Integer, Double> rates = new ConcurrentHashMap<>();
             // saves rates before unchoking
             for (Map.Entry<Integer,Integer> entry : peer.piecesSent.entrySet())

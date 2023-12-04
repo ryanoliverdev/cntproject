@@ -192,4 +192,25 @@ public class Messages {
         return sendPiecesMessage;
 
     }
+
+    public static byte[] getHasFile()
+    {
+        int messageType = 8; // "choke" message type
+
+        // Create a byte array to store the message
+        byte[] hasFileMessage = new byte[5]; // 4 bytes for length, 1 byte for message type
+
+        // Calculate the message length (1 byte for the type, no payload)
+        int messageLength = 1;
+        ByteBuffer buffer = ByteBuffer.allocate(4);
+        buffer.putInt(messageLength);
+        System.arraycopy(buffer.array(), 0, hasFileMessage, 0, 4);
+
+        // Set the message type
+        hasFileMessage[4] = (byte) messageType;
+
+        // Simulate sending the "choke" message to the peer
+        return hasFileMessage;
+
+    }
 }
