@@ -16,7 +16,7 @@ public class FileData {
 
     public void setData(byte[] indexField, byte[] piece, int peerID) {
         try {
-            File f = new File("./project_config_file_small/" + peerID + "/" + fileName);
+            File f = new File("./project_config_file_large/" + peerID + "/" + fileName);
             RandomAccessFile file;
 
             // If the file doesn't exist, create it and set its length

@@ -300,7 +300,7 @@ public class Server
                         System.arraycopy(messageBuffer, 0, indexField, 0, 4);
 
                         // Get piece content
-                        String filePath = "./project_config_file_small/" + peer.peerID + "/" + peer.fileName;
+                        String filePath = "./project_config_file_large/" + peer.peerID + "/" + peer.fileName;
                         byte[] pieceContent = peer.fileData.getData(indexField, filePath);
                         byte[] piecesMessage = Messages.getPiecesMessage(indexField, pieceContent);
 
@@ -321,11 +321,6 @@ public class Server
                     {
                         // Take in data
                         // Create a new array for the index field and copy the first 4 bytes of messageBuffer
-                        // Stop if choked
-                        if (peer.isChokedPeer.get(destPeerID))
-                        {
-                            out.flush();
-                        }
 
                         System.out.println("Received Piece Message");
                         byte[] indexField = new byte[4];
