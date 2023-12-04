@@ -104,6 +104,7 @@ public class Server
                             peer.unSetInterestPeer(destPeerID);
                             peer.chokePeer(destPeerID);
                             peer.piecesSent.putIfAbsent(destPeerID, 0);
+                            peer.hasFilePeers.putIfAbsent(destPeerID, false);
 
                             // Perform handshake
                             byte[] handshakeMessage = Messages.getHandshakeMessage(peer.peerID);
@@ -126,7 +127,6 @@ public class Server
                                 byte[] bitfieldMsg = Messages.getBitfieldMessage(bitfield);
                                 peer.setOwnBitfield(bitfield);
                                 sendMessage(bitfieldMsg, out);
-
                                 System.out.println("Bitfield sent");
                             }
                             else
@@ -170,7 +170,10 @@ public class Server
                     length = ByteBuffer.wrap(lengthBuffer).getInt();
                     in.read(typeBuffer);
                     type = typeBuffer[0];
-
+                    if (length == 0)
+                    {
+                        continue;
+                    }
                     System.out.println("MESSAGE OF TYPE: " + type + " RECEIVED WITH LENGTH: " + length);
 
                     if (length > 1)
@@ -184,7 +187,6 @@ public class Server
                     {
                         System.out.println("Set bitfield for " + destPeerID);
                         peer.setPeerPiecesBitfield(destPeerID, messageBuffer);
-                        peer.setHasFile(destPeerID);
                         byte[] msg;
 
                         if (messageBuffer.length > peer.bitfield.length)
@@ -298,13 +300,20 @@ public class Server
                         System.arraycopy(messageBuffer, 0, indexField, 0, 4);
 
                         // Get piece content
-                        String filePath = "./project_config_file_large/" + peer.peerID + "/" + peer.fileName;
+                        String filePath = "./project_config_file_small/" + peer.peerID + "/" + peer.fileName;
                         byte[] pieceContent = peer.fileData.getData(indexField, filePath);
                         byte[] piecesMessage = Messages.getPiecesMessage(indexField, pieceContent);
 
                         sendMessage(piecesMessage, out);
                         peer.piecesSent.put(destPeerID, peer.piecesSent.get(destPeerID) + 1);
-
+                        if (peer.piecesSent.get(destPeerID) >= peer.numOfPieces)
+                        {
+                            peer.hasFilePeers.put(destPeerID, true);
+                        }
+                        byte[] hasMessage = Messages.getHasFileMessage(indexField);
+                        sendMessage(hasMessage, out);
+                        int index = ByteBuffer.wrap(indexField).getInt();
+                        peer.logger.writeLogMessage(6, destPeerID, peer.peerID, index, 0);
                     }
 
                     // Receive piece
@@ -338,20 +347,20 @@ public class Server
                         peer.bitfield[indexInt] = (byte) (peer.bitfield[indexInt] | (1 << indexRem));
                         System.arraycopy(messageBuffer, 0, indexField, 0, 4);
 
-                        for (Map.Entry<Integer, Socket> entry : peer.connections.entrySet())
-                        {
-                            Socket requestSocket = entry.getValue();
-                            Integer peerID = entry.getKey();
-                            Object lock = peer.connectionLocks.get(peerID);
-
-                            synchronized (lock) {
-                                DataOutputStream out = new DataOutputStream(requestSocket.getOutputStream());
-                                out.flush();
-
-                                byte[] hasMessage = Messages.getHasFileMessage(indexField);
-                                sendMessage(hasMessage, out);
-                            }
-                        }
+//                        for (Map.Entry<Integer, Socket> entry : peer.connections.entrySet())
+//                        {
+//                            Socket requestSocket = entry.getValue();
+//                            Integer peerID = entry.getKey();
+//                            Object lock = peer.connectionLocks.get(peerID);
+//
+//                            synchronized (lock) {
+//                                DataOutputStream out = new DataOutputStream(requestSocket.getOutputStream());
+//                                out.flush();
+//                                byte[] hasMessage = Messages.getHasFileMessage(indexField);
+//                                peer.logger.writeLogMessage(6, peer.peerID, destPeerID, index, 0);
+//                                sendMessage(hasMessage, out);
+//                            }
+//                        }
 
                         System.out.println(peer.numOfPiecesHave);
                         System.out.println(peer.numOfPieces);
@@ -396,33 +405,47 @@ public class Server
                             byte[] requestMessage = Messages.getRequestMessage(nextIndexField);
                             sendMessage(requestMessage, out);
                         }
-
-                        peer.hasFile = true;
-                        peer.logger.writeLogMessage(10, 0, 0, 0, 0);
-
+                        else
+                        {
+                            peer.hasFile = true;
+                            System.out.println("Peer " + peer.peerID + " has downloaded the complete file.");
+                            peer.logger.writeLogMessage(10, peer.peerID, destPeerID, 0, 0);
+                        }
                     }
-
                     if (type == 4)
                     {
                         byte[] indexField = new byte[4];
                         int index = ByteBuffer.wrap(indexField).getInt();
                         int indexInt = index / 8;
                         int indexRem = index % 8;
-
-                        peer.bitfield[indexInt] = (byte) (peer.bitfield[indexInt] | (1 << indexRem));
+                        int peerWhoHas = peer.hasPiecesPeers.get(destPeerID)[indexInt] & (1 << indexRem);
+                        int localPeer = peer.bitfield[indexInt] & (1 << indexRem);
+                        if (peerWhoHas != localPeer)
+                        {
+                            byte[] msg = Messages.getInterestMessage();
+                            sendMessage(msg, out);
+                        }
+                        else
+                        {
+                            byte[] msg = Messages.getUnInterestMessage();
+                            sendMessage(msg, out);
+                        }
+                        peer.hasPiecesPeers.get(destPeerID)[indexInt] = (byte) (peer.hasPiecesPeers.get(destPeerID)[indexInt] | (1 << indexRem));
                         peer.logger.writeLogMessage(6, peer.peerID, destPeerID, index, 0);
                     }
-
-                    Boolean p2pFinished = true;
-
-                    for (Map.Entry<Integer, Boolean> entry : peer.hasFilePeers.entrySet())
+                    if (type == 8)
                     {
-                        p2pFinished = p2pFinished && entry.getValue();
+                        peer.hasFilePeers.put(destPeerID, true);
                     }
-                    if (p2pFinished && peer.hasFile)
-                    {
-                        // can terminate, all peers have file
-                    }
+//                    peer.p2pFinished = false;
+//                    for (Map.Entry<Integer, Boolean> entry : peer.hasFilePeers.entrySet())
+//                    {
+//                        peer.p2pFinished = peer.p2pFinished && entry.getValue();
+//                    }
+//                    if (peer.p2pFinished && peer.hasFile)
+//                    {
+//                        break;
+//                    }
                 }
             }
             catch(IOException ioException){
