@@ -39,6 +39,8 @@ public class Client extends Thread
                 // Add new uninterested peer
                 peer.unSetInterestPeer(id);
 
+                peer.piecesSent.putIfAbsent(id, 0);
+
                 System.out.println("Connected to " + hostName + " in port " + peerPort);
 
                 DataOutputStream out = new DataOutputStream(requestSockets.get(id).getOutputStream());
@@ -102,9 +104,9 @@ public class Client extends Thread
 
                                 if (peer.hasFile)
                                 {
-                                    int numOfPieces = (int) Math.ceil((double) peer.fileSize / peer.pieceSize);
+                                    int numOfPieces = peer.numOfPieces;
 
-                                    byte[] bitfield = new byte[(numOfPieces + 7)/8];
+                                    byte[] bitfield = new byte[numOfPieces];
 
                                     for (int i = 0; i < numOfPieces; i++)
                                     {
@@ -116,6 +118,18 @@ public class Client extends Thread
                                     sendMessage(bitfieldMsg, out);
 
                                     System.out.println("Bitfield sent");
+                                }
+                                else
+                                {
+                                    int numOfPieces = peer.numOfPieces;
+
+                                    byte[] bitfield = new byte[numOfPieces];
+
+                                    for (int i = 0; i < numOfPieces; i++)
+                                    {
+                                        bitfield[i/8] |= 0;
+                                    }
+                                    peer.setOwnBitfield(bitfield);
                                 }
                             }
                         }
@@ -222,7 +236,6 @@ public class Client extends Thread
                             // Determine what other peer has that it doesn't
                             byte[] localBitfield = peer.bitfield;
                             byte[] peerBitfield = peer.hasPiecesPeers.get(destPeerID);
-
                             BitSet localBitSet = BitSet.valueOf(localBitfield);
                             BitSet peerBitSet = BitSet.valueOf(peerBitfield);
 
@@ -237,15 +250,21 @@ public class Client extends Thread
 
                             for (int i = diff.nextSetBit(0); i >= 0; i = diff.nextSetBit(i+1))
                             {
-                                pieceIndices.add(i);
+                                if (i < peer.numOfPieces) {
+                                    pieceIndices.add(i);
+                                }
                             }
-
+                            if (pieceIndices.size() == 0)
+                            {
+                                continue;
+                            }
                             Random rand = new Random();
                             int randomIndex = rand.nextInt(pieceIndices.size());
+                            System.out.println("pieceIndices.size(): " + pieceIndices.size());
                             int randomPieceIndex = pieceIndices.get(randomIndex);
 
                             ByteBuffer buffer = ByteBuffer.allocate(4);
-                            buffer.putInt(randomPieceIndex / 8);
+                            buffer.putInt(randomPieceIndex);
                             byte[] indexField = buffer.array();
 
                             // send unchoke log
@@ -272,7 +291,7 @@ public class Client extends Thread
                             System.arraycopy(messageBuffer, 0, indexField, 0, 4);
 
                             // Get piece content
-                            String filePath = "./project_config_file_small/" + peer.peerID + "/" + peer.fileName;
+                            String filePath = "./project_config_file_large/" + peer.peerID + "/" + peer.fileName;
                             byte[] pieceContent = peer.fileData.getData(indexField, filePath);
                             byte[] piecesMessage = Messages.getPiecesMessage(indexField, pieceContent);
 
@@ -346,13 +365,19 @@ public class Client extends Thread
 
                                 for (int i = diff.nextSetBit(0); i >= 0; i = diff.nextSetBit(i+1))
                                 {
-                                    pieceIndices.add(i);
+                                    if (i < peer.numOfPieces) {
+                                        pieceIndices.add(i);
+                                    }
                                 }
 
                                 Random rand = new Random();
+                                int randomPieceIndex;
+                                if (pieceIndices.size() == 0)
+                                {
+                                    continue;
+                                }
                                 int randomIndex = rand.nextInt(pieceIndices.size());
-                                int randomPieceIndex = pieceIndices.get(randomIndex);
-
+                                randomPieceIndex = pieceIndices.get(randomIndex);
                                 ByteBuffer buffer = ByteBuffer.allocate(4);
                                 buffer.putInt(randomPieceIndex);
 
@@ -379,9 +404,9 @@ public class Client extends Thread
 
                        /* Boolean p2pFinished = true;
 
-                        for (int i = 0; i < peer.hasFilePeers.size(); i++)
+                        for (Map.Entry<Integer, Boolean> entry : peer.hasFilePeers.entrySet())
                         {
-                            p2pFinished = p2pFinished && peer.hasFilePeers.get(i);
+                            p2pFinished = p2pFinished && entry.getValue();
                         }
 
                         if (p2pFinished && peer.hasFile)

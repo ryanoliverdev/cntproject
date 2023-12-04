@@ -83,6 +83,7 @@ public class Peer
         // Reading in all PeerInfo.cfg Info
         numOfPieces = (int) Math.ceil((double) fileSize / pieceSize);
         bitfield = new byte[numOfPieces];
+        Arrays.fill(bitfield, (byte) 0);
         System.out.println(numOfPieces);
         hostName = peerInfo.get(id)[0];
         portNumber = Integer.parseInt(peerInfo.get(id)[1]);
